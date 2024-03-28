@@ -9,6 +9,10 @@
 
 #define RESET_TEXT "\033[0m"
 
+typedef struct {
+
+} Function;
+
 static void *failMalloc(size_t nByte) {
     void *buffer = malloc(nByte);
 
@@ -53,7 +57,7 @@ static void printMainMenuMessage(void) {
 /*
  * Wrapper for fgets that exits current process if fgets fails
  */
-static void readString(char *string, int nCharacter, FILE *stream) {
+static void readLine(char *string, int nCharacter, FILE *stream) {
     char *readResult;
 
     do {
@@ -61,7 +65,7 @@ static void readString(char *string, int nCharacter, FILE *stream) {
     } while (strlen(string) < 2 || strchr(string, '\n') == NULL);
 
     if (readResult == NULL) {
-        fprintf(stderr, RED_TEXT "readString: fgets failed\n" RESET_TEXT);
+        fprintf(stderr, RED_TEXT "readLine: fgets failed\n" RESET_TEXT);
         exit(EXIT_FAILURE);
     }
 }
@@ -73,7 +77,7 @@ static void readString(char *string, int nCharacter, FILE *stream) {
 static int readChoice(int *choice, char *line, int maxLineSize) {
     int scanResult;
 
-    readString(line, maxLineSize, stdin);
+    readLine(line, maxLineSize, stdin);
     scanResult = sscanf(line, " %d", choice);
 
     return scanResult;
@@ -97,8 +101,32 @@ static int validateInput(int scanResult, int choice, int firstChoice, int lastCh
     return isValid;
 }
 
+/*
+ * Reads a function from stdin, constructs a Function type, and returns it
+ * Caller must free the returned pointer
+ */
+static Function *readFunction(void) {
+    size_t MAX_LINE_SIZE = 256;
+
+    char *functionString;
+    Function *function;
+
+    functionString = failMalloc(MAX_LINE_SIZE * sizeof(char));
+
+    printf(GREEN_TEXT "\nEnter the function: " RESET_TEXT);
+    readLine(functionString, (int) MAX_LINE_SIZE, stdin);
+
+    free(functionString);
+
+    return function;
+}
+
 static void bisection(void) {
+    Function *function;
+
     debug("\nbisection: called\n");
+
+    function = readFunction();
 }
 
 static void regulaFalsi(void) {
