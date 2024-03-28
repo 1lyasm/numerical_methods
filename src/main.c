@@ -97,6 +97,46 @@ static int validateInput(int scanResult, int choice, int firstChoice, int lastCh
     return isValid;
 }
 
+static void bisection(void) {
+    debug("\nbisection: called\n");
+}
+
+static void regulaFalsi(void) {
+    debug("\nregulaFalsi: called\n");
+}
+
+static void newtonRaphson(void) {
+    debug("\nnewtonRaphson: called\n");
+}
+
+static void inverse(void) {
+    debug("\ninverse: called\n");
+}
+
+static void gaussianElimination(void) {
+    debug("\ngaussianElimination: called\n");
+}
+
+static void gaussSeidel(void) {
+    debug("\ngaussSeidel: called\n");
+}
+
+static void differentiation(void) {
+    debug("\ndifferentiation: called\n");
+}
+
+static void simpsons(void) {
+    debug("\nsimpsons: called\n");
+}
+
+static void trapezoidal(void) {
+    debug("\ntrapezoidal: called\n");
+}
+
+static void gregoryNewton(void) {
+    debug("\ngregoryNewton: called\n");
+}
+
 static void runMainMenu(void) {
     int EXIT_CHOICE = 11;
     int FIRST_CHOICE = 1;
@@ -115,7 +155,31 @@ static void runMainMenu(void) {
         scanResult = readChoice(&choice, line, (int) MAX_LINE_SIZE);
         isValid = validateInput(scanResult, choice, FIRST_CHOICE, EXIT_CHOICE);
 
-        if (isValid == 1) {
+        if (isValid == 1 && choice != EXIT_CHOICE) {
+            if (choice == 1) {
+                bisection();
+            } else if (choice == 2) {
+                regulaFalsi();
+            } else if (choice == 3) {
+                newtonRaphson();
+            } else if (choice == 4) {
+                inverse();
+            } else if (choice == 5) {
+                gaussianElimination();
+            } else if (choice == 6) {
+                gaussSeidel();
+            } else if (choice == 7) {
+                differentiation();
+            } else if (choice == 8) {
+                simpsons();
+            } else if (choice == 9) {
+                trapezoidal();
+            } else if (choice == 10) {
+                gregoryNewton();
+            } else {
+                fprintf(stderr, "runMainMenu: choice has invalid value\n");
+                exit(EXIT_FAILURE);
+            }
         }
     } while (choice != EXIT_CHOICE);
 
