@@ -9,8 +9,18 @@
 
 #define RESET_TEXT "\033[0m"
 
-typedef struct {
+enum FunctionType {
+    Polynomial,
+    Exponential,
+    Trigonometric,
+    Logarithmic,
+    InverseTrigonometric
+};
 
+typedef struct {
+    double coefficient;
+    enum FunctionType type;
+    struct Function *argument;
 } Function;
 
 static void *failMalloc(size_t nByte) {
@@ -101,6 +111,26 @@ static int validateInput(int scanResult, int choice, int firstChoice, int lastCh
     return isValid;
 }
 
+static Function *constructFunctionFromString(char *functionString) {
+    Function *function;
+
+    function = failMalloc(sizeof(Function));
+
+    /*
+     * TODO: implement this
+     * TODO: allocate nested functions
+     */
+
+    return function;
+}
+
+static void freeFunction(Function *function) {
+    /*
+     * TODO: free nested functions
+     */
+    free(function);
+}
+
 /*
  * Reads a function from stdin, constructs a Function type, and returns it
  * Caller must free the returned pointer
@@ -116,6 +146,9 @@ static Function *readFunction(void) {
     printf(GREEN_TEXT "\nEnter the function: " RESET_TEXT);
     readLine(functionString, (int) MAX_LINE_SIZE, stdin);
 
+    function = constructFunctionFromString(functionString);
+
+    freeFunction(function);
     free(functionString);
 
     return function;
