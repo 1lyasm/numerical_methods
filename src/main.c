@@ -58,7 +58,7 @@ static void readString(char *string, int nCharacter, FILE *stream) {
 
     do {
         readResult = fgets(string, nCharacter, stream);
-    } while (strlen(string) < 2);
+    } while (strlen(string) < 2 || strchr(string, '\n') == NULL);
 
     if (readResult == NULL) {
         fprintf(stderr, RED_TEXT "readString: fgets failed\n" RESET_TEXT);
