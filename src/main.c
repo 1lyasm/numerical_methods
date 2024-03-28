@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdarg.h>
+#include <string.h>
 
 #define BLUE_TEXT "\033[34m"
 #define GREEN_TEXT "\033[0;32m"
@@ -24,7 +25,7 @@ static void debug(const char *format, ...) {
 
     va_start(arguments, format);
 
-    printf(RED_TEXT);
+    printf(BLUE_TEXT);
     vprintf(format, arguments);
     printf(RESET_TEXT);
 
@@ -33,37 +34,92 @@ static void debug(const char *format, ...) {
 
 static void printMainMenuMessage(void) {
     printf("\n");
-    printf(BLUE_TEXT "1." RESET_TEXT " Bisection method\n");
-    printf(BLUE_TEXT "2." RESET_TEXT " Regula falsi method\n");
-    printf(BLUE_TEXT "3." RESET_TEXT " Newton-Raphson method\n");
-    printf(BLUE_TEXT "4." RESET_TEXT " Inverse of an N x N matrix (N should be a dynamic value, not small numbers like 3-4)\n");
-    printf(BLUE_TEXT "5." RESET_TEXT " Gaussian elimination\n");
-    printf(BLUE_TEXT "6." RESET_TEXT " Gauss-Seidel methods\n");
-    printf(BLUE_TEXT "7." RESET_TEXT " Numerical differentiation (with central, forward and backward differences options)\n");
-    printf(BLUE_TEXT "8." RESET_TEXT " Simpson's method\n");
-    printf(BLUE_TEXT "9." RESET_TEXT " Trapezoidal method\n");
-    printf(BLUE_TEXT "10." RESET_TEXT " Gregory-Newton interpolation without variable transformation\n");
+    printf(RED_TEXT "1." RESET_TEXT " Bisection method\n");
+    printf(RED_TEXT "2." RESET_TEXT " Regula falsi method\n");
+    printf(RED_TEXT "3." RESET_TEXT " Newton-Raphson method\n");
+    printf(RED_TEXT "4." RESET_TEXT " Inverse of an N x N matrix (N should be a dynamic value, not small numbers like 3-4)\n");
+    printf(RED_TEXT "5." RESET_TEXT " Gaussian elimination\n");
+    printf(RED_TEXT "6." RESET_TEXT " Gauss-Seidel methods\n");
+    printf(RED_TEXT "7." RESET_TEXT " Numerical differentiation (with central, forward and backward differences options)\n");
+    printf(RED_TEXT "8." RESET_TEXT " Simpson's method\n");
+    printf(RED_TEXT "9." RESET_TEXT " Trapezoidal method\n");
+    printf(RED_TEXT "10." RESET_TEXT " Gregory-Newton interpolation without variable transformation\n");
+    printf(RED_TEXT "11." RESET_TEXT " Exit\n");
     printf("\n");
 
     printf(GREEN_TEXT "Choice: " RESET_TEXT);
 }
 
+/*
+ * Wrapper for fgets that exits current process if fgets fails
+ */
+static void readString(char *string, int nCharacter, FILE *stream) {
+    char *readResult;
+
+    do {
+        readResult = fgets(string, nCharacter, stream);
+    } while (strlen(string) < 2);
+
+    if (readResult == NULL) {
+        fprintf(stderr, RED_TEXT "readString: fgets failed\n" RESET_TEXT);
+        exit(EXIT_FAILURE);
+    }
+}
+
+
+/*
+ * Returns result of sscanf
+ */
+static int readChoice(int *choice, char *line, int maxLineSize) {
+    int scanResult;
+
+    readString(line, maxLineSize, stdin);
+    scanResult = sscanf(line, " %d", choice);
+
+    return scanResult;
+}
+
+static int validateInput(int scanResult, int choice, int firstChoice, int lastChoice) {
+    int isValid = 0;
+
+    if (scanResult <= 0) {
+        printf(RED_TEXT "\nCould not scan the input");
+    } else if (choice < firstChoice || choice > lastChoice) {
+        printf(RED_TEXT "\nChoice is out of bounds");
+    } else {
+        isValid = 1;
+    }
+
+    if (isValid == 0) {
+        printf(", try again\n" RESET_TEXT);
+    }
+
+    return isValid;
+}
+
 static void runMainMenu(void) {
-    size_t MAX_INPUT_LEN = 256;
+    int EXIT_CHOICE = 11;
+    int FIRST_CHOICE = 1;
+    size_t MAX_LINE_SIZE = 256;
 
-    char *inputLine;
-    char inputCharacter;
+    char *line;
+    int choice;
+    int scanResult;
+    int isValid;
 
-    inputLine = failMalloc((MAX_INPUT_LEN + 1) * sizeof(char));
+    line = failMalloc(MAX_LINE_SIZE * sizeof(char));
 
     do {
         printMainMenuMessage();
 
-        scanf(" %s", inputLine);
-        inputCharacter = inputLine[0];
-    } while (inputCharacter != 'q');
+        scanResult = readChoice(&choice, line, (int) MAX_LINE_SIZE);
+        isValid = validateInput(scanResult, choice, FIRST_CHOICE, EXIT_CHOICE);
 
-    free(inputLine);
+        if (isValid == 1) {
+        }
+    } while (choice != EXIT_CHOICE);
+
+    free(line);
 }
 
 int main(void) {
