@@ -9,7 +9,7 @@
 
 #define RESET_TEXT "\033[0m"
 
-enum TokT { LPar, RPar, Const, Sin, Cos, Log};
+enum TokT { LPar, RPar, Const, Sin, Cos, Log };
 
 union TokVal {
   double number;
@@ -26,6 +26,17 @@ static void *fmalloc(size_t nByte) {
 
   if (buffer == NULL) {
     fprintf(stderr, "fmalloc: malloc failed\n");
+    exit(EXIT_FAILURE);
+  }
+
+  return buffer;
+}
+
+static void *fcalloc(size_t nItems, size_t itemSize) {
+  void *buffer = calloc(nItems, itemSize);
+
+  if (buffer == NULL) {
+    fprintf(stderr, "fmalloc: calloc failed\n");
     exit(EXIT_FAILURE);
   }
 
@@ -132,10 +143,10 @@ static char *tokTToStr(enum TokT tokT) {
   } else if (tokT == Cos) {
     strcpy(str, "Cos");
   } else if (tokT == Log) {
-      strcpy(str, "Log");
+    strcpy(str, "Log");
   } else {
-      fprintf(stderr, "tokTToStr: token type has invalid value, exiting\n");
-      exit(EXIT_FAILURE);
+    fprintf(stderr, "tokTToStr: token type has invalid value, exiting\n");
+    exit(EXIT_FAILURE);
   }
   return str;
 }
@@ -145,7 +156,12 @@ static void debugToks(Tok *toks, size_t nTok) {
   debug("printToks: tokens: [");
   for (i = 0; i < nTok; ++i) {
     char *str = tokTToStr(toks[i].tokT);
-    debug("%s ", str);
+
+    if (toks[i].tokVal.text == NULL) {
+      debug("%s ", str);
+    } else {
+      debug("{%s, %s} ", str, toks[i].tokVal.text);
+    }
     free(str);
   }
   debug("]\n");
@@ -189,19 +205,27 @@ static Tok *tokenize(char *str, size_t *nTok) {
 
   while (strIdx < strLen) {
     if (compareWord("sin", &strIdx, str, strLen) == 1) {
-        addTok(toks, nTok, Sin, NULL);
+      addTok(toks, nTok, Sin, NULL);
     } else if (compareWord("cos", &strIdx, str, strLen) == 1) {
-        addTok(toks, nTok, Cos, NULL);
+      addTok(toks, nTok, Cos, NULL);
     } else if (compareWord("(", &strIdx, str, strLen) == 1) {
-        addTok(toks, nTok, LPar, NULL);
+      addTok(toks, nTok, LPar, NULL);
     } else if (compareWord(")", &strIdx, str, strLen) == 1) {
-        addTok(toks, nTok, RPar, NULL);
-    } else if (compareWord("log_", &strIdx, str, strLen) == 1) {
-        char *tokVal = fmalloc(sizeof(char));
+      addTok(toks, nTok, RPar, NULL);
+    } else if (strIdx + strlen("log_?") <= strLen &&
+               compareWord("log_", &strIdx, str, strLen) == 1) {
+      size_t TEXT_LEN = 1;
+      char *text = fcalloc((TEXT_LEN + 1), sizeof(char));
 
-        addTok(toks, nTok, Log, tokVal);
-    }
-    else {
+      debug("tokenize: taking log branch\n");
+
+      text[0] = str[strIdx];
+
+      debug("tokenize: text: %s\n", text);
+      debug("tokenize: text[0]: %c\n", text[0]);
+
+      addTok(toks, nTok, Log, text);
+    } else {
       ++strIdx;
     }
   }
@@ -238,13 +262,13 @@ static Tok *readToks(size_t *nTok) {
 }
 
 static void freeToks(Tok *toks, size_t nTok) {
-    size_t i;
+  size_t i;
 
-    for (i = 0; i < nTok; ++i) {
-        free(toks[i].tokVal.text);
-    }
+  for (i = 0; i < nTok; ++i) {
+    free(toks[i].tokVal.text);
+  }
 
-    free(toks);
+  free(toks);
 }
 
 static void bisection(void) {
