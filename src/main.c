@@ -9,7 +9,7 @@
 
 #define RESET_TEXT "\033[0m"
 
-enum TokT { LPar, RPar, Const, Sin };
+enum TokT { LPar, RPar, Const, Sin, Cos };
 
 union TokVal {
   double number;
@@ -129,6 +129,8 @@ static char *tokTToStr(enum TokT tokT) {
     strcpy(str, "Const");
   } else if (tokT == Sin) {
     strcpy(str, "Sin");
+  } else if (tokT == Cos) {
+    strcpy(str, "Cos");
   } else {
     str = NULL;
   }
@@ -178,6 +180,9 @@ static Tok *tokenize(char *str) {
   while (strIdx < strLen) {
     if (compareWord("sin", &strIdx, str, strLen) == 1) {
       toks[nTok].tokT = Sin;
+      ++nTok;
+    } else if (compareWord("cos", &strIdx, str, strLen) == 1) {
+      toks[nTok].tokT = Cos;
       ++nTok;
     } else {
       ++strIdx;
