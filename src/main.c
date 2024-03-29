@@ -201,6 +201,10 @@ static Tok *tokenize(char *str, size_t *nTok) {
   size_t strIdx = 0;
   size_t strLen = strlen(str);
 
+  /*
+   * TODO: Add other types of tokens to token list
+   */
+
   *nTok = 0;
 
   while (strIdx < strLen) {
