@@ -130,7 +130,7 @@ static char *tokTToStr(enum TokT tokT) {
   } else if (tokT == Sin) {
     strcpy(str, "Sin");
   } else {
-      str = NULL;
+    str = NULL;
   }
   return str;
 }
@@ -146,6 +146,28 @@ static void debugToks(Tok *toks, size_t nTok) {
   debug("]\n");
 }
 
+static size_t compareWord(char *target, size_t *strIdx, char *str,
+                          size_t strLen) {
+  size_t targetLen = strlen(target);
+  size_t i;
+  size_t areEq = 0;
+
+  if (*strIdx + targetLen <= strLen) {
+    areEq = 1;
+    for (i = 0; i < targetLen && areEq == 1; ++i) {
+      if (str[*strIdx + i] != target[i]) {
+        areEq = 0;
+      }
+    }
+  }
+
+  if (areEq == 1) {
+    *strIdx += targetLen;
+  }
+
+  return areEq;
+}
+
 static Tok *tokenize(char *str) {
   size_t N_MAX_TOK = 1024;
   Tok *toks = fmalloc(N_MAX_TOK * sizeof(Tok));
@@ -154,13 +176,12 @@ static Tok *tokenize(char *str) {
   size_t strLen = strlen(str);
 
   while (strIdx < strLen) {
-    if (strIdx + 3 < strLen && str[strIdx] == 's' && str[strIdx + 1] == 'i' &&
-        str[strIdx + 2] == 'n') {
+    if (compareWord("sin", &strIdx, str, strLen) == 1) {
       toks[nTok].tokT = Sin;
       ++nTok;
+    } else {
+      ++strIdx;
     }
-
-    ++strIdx;
   }
 
   debug("tokenize: token count: %lu\n", nTok);
@@ -182,6 +203,10 @@ static Tok *readToks(void) {
 
   printf(GREEN_TEXT "\nEnter the function: " RESET_TEXT);
   readLine(funcStr, (int)MAX_LINE_SIZE, stdin);
+
+  if (funcStr[strlen(funcStr) - 1] == '\n') {
+    funcStr[strlen(funcStr) - 1] = '\0';
+  }
 
   toks = tokenize(funcStr);
 
