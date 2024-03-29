@@ -9,46 +9,15 @@
 
 #define RESET_TEXT "\033[0m"
 
-enum FunctionType {
-  Polynomial,
-  Exponential,
-  Sine,
-  Cosine,
-  Tangent,
-  Cotangent,
-  Logarithmic,
-  Arcsin,
-  Arccos,
-  Arctan,
-  Arccot,
-  Linear
-};
-
-enum Operator {
-  Exponentiation,
-  Addition,
-  Subtraction,
-  Multiplication,
-  Division
-};
-
 typedef struct {
-  double coefficient;
-  enum FunctionType type;
-  struct Function *argument;
-} Function;
 
-typedef struct {
-  Function *leftOperand;
-  enum Operator operator;
-  struct FunctionCombination *rightOperand;
-} FunctionCombination;
+} Tok;
 
-static void *failMalloc(size_t nByte) {
+static void *fmalloc(size_t nByte) {
   void *buffer = malloc(nByte);
 
   if (buffer == NULL) {
-    fprintf(stderr, "failMalloc: malloc failed\n");
+    fprintf(stderr, "fmalloc: malloc failed\n");
     exit(EXIT_FAILURE);
   }
 
@@ -138,139 +107,41 @@ static int validateInput(int scanResult, int choice, int firstChoice,
   return isValid;
 }
 
-static int compareWord(char *string, char *target) {
-  int areEqual = 1;
+static Tok *tokenize(char *str) {
+  Tok *toks = NULL;
 
-  for (; *string != '\0' && *target != '\0'; ++string, ++target) {
-    if (*string != *target) {
-      areEqual = 0;
-    }
-  }
-
-  if (*target != '\0') {
-    areEqual = 0;
-  }
-
-  return areEqual;
-}
-
-static char *functionTypeToString(enum FunctionType functionType) {
-  size_t MAX_STRING_LENGTH = 64;
-  char *string = failMalloc((MAX_STRING_LENGTH + 1) * sizeof(char));
-  if (functionType == Polynomial) {
-    strcpy(string, "Polynomial");
-  } else if (functionType == Exponential) {
-    strcpy(string, "Exponential");
-  } else if (functionType == Sine) {
-    strcpy(string, "Sine");
-  } else if (functionType == Cosine) {
-    strcpy(string, "Cosine");
-  } else if (functionType == Tangent) {
-    strcpy(string, "Tangent");
-  } else if (functionType == Cotangent) {
-    strcpy(string, "Cotangent");
-  } else if (functionType == Logarithmic) {
-    strcpy(string, "Logarithmic");
-  } else if (functionType == Arcsin) {
-    strcpy(string, "Arcsin");
-  } else if (functionType == Arccos) {
-    strcpy(string, "Arccos");
-  } else if (functionType == Arctan) {
-    strcpy(string, "Arctan");
-  } else if (functionType == Arccot) {
-    strcpy(string, "Arccot");
-  } else if (functionType == Linear) {
-    strcpy(string, "Linear");
-  } else {
-    strcpy(string, "Unknown"); // Handle any other cases
-  }
-  return string;
+  return toks;
 }
 
 /*
- * Parses one function from the input string and stops
- */
-static Function *constructFunctionFromString(char *functionString) {
-  Function *function = failMalloc(sizeof(Function));
-  char *current = functionString;
-  int parsed = 1;
-  char *functionTypeString;
-
-  if (*current == 'x') {
-    function->coefficient = 1;
-    function->type = Linear;
-    function->argument = NULL;
-  } else if (compareWord(current, "sin") == 1) {
-    function->coefficient = 1;
-    function->type = Sine;
-    function->argument = NULL;
-  } else if (compareWord(current, "cos") == 1) {
-    function->coefficient = 1;
-    function->type = Cosine;
-    function->argument = NULL;
-  } else {
-      printf(RED_TEXT "\nCould not parse function, try again\n" RESET_TEXT);
-      parsed = 0;
-  }
-
-  if (parsed == 1) {
-      functionTypeString = functionTypeToString(function->type);
-      debug("constructFunctionFromString: function->coefficient: %f, "
-            "function->type: %s, function->argument: %p\n",
-            function->coefficient, functionTypeString, function->argument);
-      free(functionTypeString);
-  }
-
-  return function;
-}
-
-static FunctionCombination *
-constructFunctionCombinationFromString(char *functionString) {
-  FunctionCombination *functionCombination;
-
-  functionCombination = failMalloc(sizeof(FunctionCombination));
-
-  functionCombination->leftOperand =
-      constructFunctionFromString(functionString);
-
-  return functionCombination;
-}
-
-static void freeFunctionCombination(FunctionCombination *functionCombination) {
-  /*
-   * TODO: free nested function combinations in right operand
-   */
-  free(functionCombination->leftOperand);
-  free(functionCombination);
-}
-
-/*
- * Reads a function from stdin, constructs a Function type, and returns it
  * Caller must free the returned pointer
  */
-static FunctionCombination *readFunctionCombination(void) {
+static Tok *readToks(void) {
   size_t MAX_LINE_SIZE = 256;
 
-  char *functionString;
-  FunctionCombination *functionCombination;
+  char *funcStr;
+  Tok *toks;
 
-  functionString = failMalloc(MAX_LINE_SIZE * sizeof(char));
+  funcStr = fmalloc(MAX_LINE_SIZE * sizeof(char));
 
   printf(GREEN_TEXT "\nEnter the function: " RESET_TEXT);
-  readLine(functionString, (int)MAX_LINE_SIZE, stdin);
+  readLine(funcStr, (int)MAX_LINE_SIZE, stdin);
 
-  functionCombination = constructFunctionCombinationFromString(functionString);
+  toks = tokenize(funcStr);
 
-  freeFunctionCombination(functionCombination);
-  free(functionString);
+  free(funcStr);
 
-  return functionCombination;
+  return toks;
 }
 
 static void bisection(void) {
-  FunctionCombination *functionCombination;
+  Tok *toks;
 
-  functionCombination = readFunctionCombination();
+  debug("\nbisection: called\n");
+
+  toks = readToks();
+
+  free(toks);
 }
 
 static void regulaFalsi(void) { debug("\nregulaFalsi: called\n"); }
@@ -303,7 +174,7 @@ static void runMainMenu(void) {
   int scanResult;
   int isValid;
 
-  line = failMalloc(MAX_LINE_SIZE * sizeof(char));
+  line = fmalloc(MAX_LINE_SIZE * sizeof(char));
 
   do {
     printMainMenuMessage();
