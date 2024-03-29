@@ -9,11 +9,20 @@
 
 #define RESET_TEXT "\033[0m"
 
-static void *failMalloc(size_t nByte) {
+/*
+ * Binary computation tree
+ */
+typedef struct {
+    void *value;
+    struct BiTree *left;
+    struct BiTree *right;
+} BiTree;
+
+static void *fmalloc(size_t nByte) {
   void *buffer = malloc(nByte);
 
   if (buffer == NULL) {
-    fprintf(stderr, "failMalloc: malloc failed\n");
+    fprintf(stderr, "fmalloc: malloc failed\n");
     exit(EXIT_FAILURE);
   }
 
@@ -103,7 +112,41 @@ static int validateInput(int scanResult, int choice, int firstChoice,
   return isValid;
 }
 
-static void bisection(void) { debug("\nbisection: called\n"); }
+static BiTree *strToBiTree(char *str) {
+    BiTree *bitree;
+
+    bitree = fmalloc(sizeof(BiTree));
+
+    return bitree;
+}
+
+static BiTree *readBiTree(void) {
+  size_t MAX_LINE_SIZE = 256;
+
+  char *funcStr;
+  BiTree *bitree;
+
+  funcStr = fmalloc(MAX_LINE_SIZE * sizeof(char));
+
+  printf(GREEN_TEXT "\nEnter the function: " RESET_TEXT);
+  readLine(funcStr, (int)MAX_LINE_SIZE, stdin);
+
+  bitree = strToBiTree(funcStr);
+
+  free(funcStr);
+
+  return bitree;
+}
+
+static void freeBiTree(BiTree *bitree) {
+    free(bitree);
+}
+
+static void bisection(void) {
+  BiTree *bitree = readBiTree();
+
+  freeBiTree(bitree);
+}
 
 static void regulaFalsi(void) { debug("\nregulaFalsi: called\n"); }
 
@@ -135,7 +178,7 @@ static void runMainMenu(void) {
   int scanResult;
   int isValid;
 
-  line = failMalloc(MAX_LINE_SIZE * sizeof(char));
+  line = fmalloc(MAX_LINE_SIZE * sizeof(char));
 
   do {
     printMainMenuMessage();
