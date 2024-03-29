@@ -184,6 +184,12 @@ static Tok *tokenize(char *str) {
     } else if (compareWord("cos", &strIdx, str, strLen) == 1) {
       toks[nTok].tokT = Cos;
       ++nTok;
+    } else if (compareWord("(", &strIdx, str, strLen) == 1) {
+        toks[nTok].tokT = LPar;
+        ++nTok;
+    } else if (compareWord(")", &strIdx, str, strLen) == 1) {
+        toks[nTok].tokT = RPar;
+        ++nTok;
     } else {
       ++strIdx;
     }
