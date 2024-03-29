@@ -9,8 +9,16 @@
 
 #define RESET_TEXT "\033[0m"
 
-typedef struct {
+enum TokT { LPar, RPar, Const, Sin };
 
+union TokVal {
+  double number;
+  char *text;
+};
+
+typedef struct {
+  enum TokT tokT;
+  union TokVal tokVal;
 } Tok;
 
 static void *fmalloc(size_t nByte) {
@@ -107,8 +115,56 @@ static int validateInput(int scanResult, int choice, int firstChoice,
   return isValid;
 }
 
+/*
+ * Caller should free the returned pointer
+ */
+static char *tokTToStr(enum TokT tokT) {
+  size_t N_MAX_CHAR = 256;
+  char *str = fmalloc((N_MAX_CHAR + 1) * sizeof(char));
+  if (tokT == LPar) {
+    strcpy(str, "LPar");
+  } else if (tokT == RPar) {
+    strcpy(str, "RPar");
+  } else if (tokT == Const) {
+    strcpy(str, "Const");
+  } else if (tokT == Sin) {
+    strcpy(str, "Sin");
+  } else {
+      str = NULL;
+  }
+  return str;
+}
+
+static void debugToks(Tok *toks, size_t nTok) {
+  size_t i;
+  debug("printToks: tokens: [");
+  for (i = 0; i < nTok; ++i) {
+    char *str = tokTToStr(toks[i].tokT);
+    debug("%s ", str);
+    free(str);
+  }
+  debug("]\n");
+}
+
 static Tok *tokenize(char *str) {
-  Tok *toks = NULL;
+  size_t N_MAX_TOK = 1024;
+  Tok *toks = fmalloc(N_MAX_TOK * sizeof(Tok));
+  size_t nTok = 0;
+  size_t strIdx = 0;
+  size_t strLen = strlen(str);
+
+  while (strIdx < strLen) {
+    if (strIdx + 3 < strLen && str[strIdx] == 's' && str[strIdx + 1] == 'i' &&
+        str[strIdx + 2] == 'n') {
+      toks[nTok].tokT = Sin;
+      ++nTok;
+    }
+
+    ++strIdx;
+  }
+
+  debug("tokenize: token count: %lu\n", nTok);
+  debugToks(toks, nTok);
 
   return toks;
 }
