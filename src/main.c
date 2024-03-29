@@ -9,7 +9,7 @@
 
 #define RESET_TEXT "\033[0m"
 
-enum TokT { LPar, RPar, Const, Sin, Cos };
+enum TokT { LPar, RPar, Const, Sin, Cos, Log};
 
 union TokVal {
   double number;
@@ -170,33 +170,43 @@ static size_t compareWord(char *target, size_t *strIdx, char *str,
   return areEq;
 }
 
-static Tok *tokenize(char *str) {
+static void addTok(Tok *toks, size_t *nTok, enum TokT tokT) {
+  toks[*nTok].tokT = tokT;
+  toks[*nTok].tokVal.text = NULL;
+  ++*nTok;
+}
+
+static Tok *tokenize(char *str, size_t *nTok) {
   size_t N_MAX_TOK = 1024;
   Tok *toks = fmalloc(N_MAX_TOK * sizeof(Tok));
-  size_t nTok = 0;
   size_t strIdx = 0;
   size_t strLen = strlen(str);
 
+  *nTok = 0;
+
   while (strIdx < strLen) {
     if (compareWord("sin", &strIdx, str, strLen) == 1) {
-      toks[nTok].tokT = Sin;
-      ++nTok;
+        addTok(toks, nTok, Sin);
     } else if (compareWord("cos", &strIdx, str, strLen) == 1) {
-      toks[nTok].tokT = Cos;
-      ++nTok;
+        addTok(toks, nTok, Cos);
     } else if (compareWord("(", &strIdx, str, strLen) == 1) {
-        toks[nTok].tokT = LPar;
-        ++nTok;
+        addTok(toks, nTok, LPar);
     } else if (compareWord(")", &strIdx, str, strLen) == 1) {
-        toks[nTok].tokT = RPar;
-        ++nTok;
-    } else {
+        addTok(toks, nTok, RPar);
+    } else if (compareWord("log_", &strIdx, str, strLen) == 1) {
+        char *tokVal = fmalloc(sizeof(char));
+
+        toks[*nTok].tokT = Log;
+        toks[*nTok].tokVal.text = tokVal;
+        ++*nTok;
+    }
+    else {
       ++strIdx;
     }
   }
 
-  debug("tokenize: token count: %lu\n", nTok);
-  debugToks(toks, nTok);
+  debug("tokenize: token count: %lu\n", *nTok);
+  debugToks(toks, *nTok);
 
   return toks;
 }
@@ -204,7 +214,7 @@ static Tok *tokenize(char *str) {
 /*
  * Caller must free the returned pointer
  */
-static Tok *readToks(void) {
+static Tok *readToks(size_t *nTok) {
   size_t MAX_LINE_SIZE = 256;
 
   char *funcStr;
@@ -219,21 +229,32 @@ static Tok *readToks(void) {
     funcStr[strlen(funcStr) - 1] = '\0';
   }
 
-  toks = tokenize(funcStr);
+  toks = tokenize(funcStr, nTok);
 
   free(funcStr);
 
   return toks;
 }
 
+static void freeToks(Tok *toks, size_t nTok) {
+    size_t i;
+
+    for (i = 0; i < nTok; ++i) {
+        free(toks[i].tokVal.text);
+    }
+
+    free(toks);
+}
+
 static void bisection(void) {
   Tok *toks;
+  size_t nTok = 0;
 
   debug("\nbisection: called\n");
 
-  toks = readToks();
+  toks = readToks(&nTok);
 
-  free(toks);
+  freeToks(toks, nTok);
 }
 
 static void regulaFalsi(void) { debug("\nregulaFalsi: called\n"); }
