@@ -131,8 +131,11 @@ static char *tokTToStr(enum TokT tokT) {
     strcpy(str, "Sin");
   } else if (tokT == Cos) {
     strcpy(str, "Cos");
+  } else if (tokT == Log) {
+      strcpy(str, "Log");
   } else {
-    str = NULL;
+      fprintf(stderr, "tokTToStr: token type has invalid value, exiting\n");
+      exit(EXIT_FAILURE);
   }
   return str;
 }
@@ -170,9 +173,9 @@ static size_t compareWord(char *target, size_t *strIdx, char *str,
   return areEq;
 }
 
-static void addTok(Tok *toks, size_t *nTok, enum TokT tokT) {
+static void addTok(Tok *toks, size_t *nTok, enum TokT tokT, char *text) {
   toks[*nTok].tokT = tokT;
-  toks[*nTok].tokVal.text = NULL;
+  toks[*nTok].tokVal.text = text;
   ++*nTok;
 }
 
@@ -186,19 +189,17 @@ static Tok *tokenize(char *str, size_t *nTok) {
 
   while (strIdx < strLen) {
     if (compareWord("sin", &strIdx, str, strLen) == 1) {
-        addTok(toks, nTok, Sin);
+        addTok(toks, nTok, Sin, NULL);
     } else if (compareWord("cos", &strIdx, str, strLen) == 1) {
-        addTok(toks, nTok, Cos);
+        addTok(toks, nTok, Cos, NULL);
     } else if (compareWord("(", &strIdx, str, strLen) == 1) {
-        addTok(toks, nTok, LPar);
+        addTok(toks, nTok, LPar, NULL);
     } else if (compareWord(")", &strIdx, str, strLen) == 1) {
-        addTok(toks, nTok, RPar);
+        addTok(toks, nTok, RPar, NULL);
     } else if (compareWord("log_", &strIdx, str, strLen) == 1) {
         char *tokVal = fmalloc(sizeof(char));
 
-        toks[*nTok].tokT = Log;
-        toks[*nTok].tokVal.text = tokVal;
-        ++*nTok;
+        addTok(toks, nTok, Log, tokVal);
     }
     else {
       ++strIdx;
@@ -248,7 +249,7 @@ static void freeToks(Tok *toks, size_t nTok) {
 
 static void bisection(void) {
   Tok *toks;
-  size_t nTok = 0;
+  size_t nTok;
 
   debug("\nbisection: called\n");
 
