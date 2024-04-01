@@ -9,14 +9,14 @@
 
 #define RESET_TEXT "\033[0m"
 
-enum TokT { LPar, RPar, Const, Sin, Cos, Log, Plus, Caret, Var};
+enum TokT { LPar, RPar, Const, Sin, Cos, Log, Plus, Caret, Var };
 
 union TokVal {
   double num;
   char *text;
 };
 
-enum ValT {Num, Text, None};
+enum ValT { Num, Text, None };
 
 typedef struct {
   enum TokT tokT;
@@ -147,6 +147,12 @@ static char *tokTToStr(enum TokT tokT) {
     strcpy(str, "Cos");
   } else if (tokT == Log) {
     strcpy(str, "Log");
+  } else if (tokT == Plus) {
+    strcpy(str, "Plus");
+  } else if (tokT == Caret) {
+    strcpy(str, "Caret");
+  } else if (tokT == Var) {
+    strcpy(str, "Var");
   } else {
     fprintf(stderr, "tokTToStr: token type has invalid value, exiting\n");
     exit(EXIT_FAILURE);
@@ -165,10 +171,10 @@ static void debugToks(Tok *toks, size_t nTok) {
     } else if (toks[i].valT == Text) {
       debug("{%s, %s} ", str, toks[i].tokVal.text);
     } else if (toks[i].valT == None) {
-        debug("{%s} ", str);
+      debug("{%s} ", str);
     } else {
-        fprintf(stderr, "debugToks: invalid value for value type\n");
-        exit(EXIT_FAILURE);
+      fprintf(stderr, "debugToks: invalid value for value type\n");
+      exit(EXIT_FAILURE);
     }
     free(str);
   }
@@ -197,35 +203,37 @@ static size_t compareWord(char *target, size_t *strIdx, char *str,
   return areEq;
 }
 
-static void addTok(Tok *toks, size_t *nTok, enum TokT tokT, union TokVal *newVal, enum ValT valT) {
+static void addTok(Tok *toks, size_t *nTok, enum TokT tokT,
+                   union TokVal *newVal, enum ValT valT) {
   toks[*nTok].tokT = tokT;
   toks[*nTok].valT = valT;
   if (valT == Num) {
-      toks[*nTok].tokVal.num = newVal->num;
+    toks[*nTok].tokVal.num = newVal->num;
   } else if (valT == Text) {
-      toks[*nTok].tokVal.text = newVal->text;
+    toks[*nTok].tokVal.text = newVal->text;
   } else if (valT == None) {
 
   } else {
-      fprintf(stderr, "addTok: invalid value for value type\n");
-      exit(EXIT_FAILURE);
+    fprintf(stderr, "addTok: invalid value for value type\n");
+    exit(EXIT_FAILURE);
   }
   ++*nTok;
 }
 
-static int checkConst(double *res, size_t *strIdx, char *str, size_t strLen) {
-    int isConst = 0;
-    int nRead;
-    int scanRes = sscanf(&(str[*strIdx]), " %lf%n", res, &nRead);
-    debug("checkConst: result: %lf\n", *res);
-    if (!(scanRes == 0 || scanRes == EOF)) {
-        isConst = 1;
-    }
-    if (isConst == 1) {
-        *strIdx += nRead;
-        debug("checkConst: saw constant, nRead: %d, new strIdx: %zu\n", nRead, *strIdx);
-    }
-    return isConst;
+static int checkConst(double *res, size_t *strIdx, char *str) {
+  int isConst = 0;
+  int nRead;
+  int scanRes = sscanf(&(str[*strIdx]), " %lf%n", res, &nRead);
+  debug("checkConst: result: %lf\n", *res);
+  if (!(scanRes == 0 || scanRes == EOF)) {
+    isConst = 1;
+  }
+  if (isConst == 1) {
+    *strIdx += (size_t)nRead;
+    debug("checkConst: saw constant, nRead: %d, new strIdx: %zu\n", nRead,
+          *strIdx);
+  }
+  return isConst;
 }
 
 static Tok *tokenize(char *str, size_t *nTok) {
@@ -237,13 +245,17 @@ static Tok *tokenize(char *str, size_t *nTok) {
   union TokVal newVal;
 
   /*
-   * TODO: Add other types of tokens, such as plus, caret and variable, to token list
+   * TODO: Add other types of tokens, such as plus, caret and variable, to token
+   * list
    */
 
   *nTok = 0;
 
   while (strIdx < strLen) {
-    if (compareWord("sin", &strIdx, str, strLen) == 1) {
+    if (str[strIdx] == '+') {
+      ++strIdx;
+      addTok(toks, nTok, Plus, &newVal, None);
+    } else if (compareWord("sin", &strIdx, str, strLen) == 1) {
       addTok(toks, nTok, Sin, &newVal, None);
     } else if (compareWord("cos", &strIdx, str, strLen) == 1) {
       addTok(toks, nTok, Cos, &newVal, None);
@@ -266,9 +278,9 @@ static Tok *tokenize(char *str, size_t *nTok) {
 
       newVal.text = text;
       addTok(toks, nTok, Log, &newVal, Text);
-    } else if (checkConst(&const_, &strIdx, str, strLen) == 1) {
-        debug("tokenize: const_: %lf\n", const_);
-        newVal.num = const_;
+    } else if (checkConst(&const_, &strIdx, str) == 1) {
+      debug("tokenize: const_: %lf\n", const_);
+      newVal.num = const_;
       addTok(toks, nTok, Const, &newVal, Num);
     } else {
       ++strIdx;
@@ -310,9 +322,9 @@ static void freeToks(Tok *toks, size_t nTok) {
   size_t i;
 
   for (i = 0; i < nTok; ++i) {
-      if (toks[i].valT == Text) {
-        free(toks[i].tokVal.text);
-      }
+    if (toks[i].valT == Text) {
+      free(toks[i].tokVal.text);
+    }
   }
 
   free(toks);
