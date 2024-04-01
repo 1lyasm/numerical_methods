@@ -9,14 +9,14 @@
 
 #define RESET_TEXT "\033[0m"
 
-enum TokT { LPar, RPar, Const, Sin, Cos, Log };
+enum TokT { LPar, RPar, Const, Sin, Cos, Log, Plus, Caret, Var};
 
 union TokVal {
   double num;
   char *text;
 };
 
-enum ValT {Num, Text};
+enum ValT {Num, Text, None};
 
 typedef struct {
   enum TokT tokT;
@@ -161,9 +161,11 @@ static void debugToks(Tok *toks, size_t nTok) {
     char *str = tokTToStr(toks[i].tokT);
 
     if (toks[i].valT == Num) {
-      debug("{%s, %lf}", str, toks[i].tokVal.num);
+      debug("{%s, %lf} ", str, toks[i].tokVal.num);
     } else if (toks[i].valT == Text) {
       debug("{%s, %s} ", str, toks[i].tokVal.text);
+    } else if (toks[i].valT == None) {
+        debug("{%s} ", str);
     } else {
         fprintf(stderr, "debugToks: invalid value for value type\n");
         exit(EXIT_FAILURE);
@@ -195,14 +197,18 @@ static size_t compareWord(char *target, size_t *strIdx, char *str,
   return areEq;
 }
 
-static void addTok(Tok *toks, size_t *nTok, enum TokT tokT, char *text, double num) {
+static void addTok(Tok *toks, size_t *nTok, enum TokT tokT, union TokVal *newVal, enum ValT valT) {
   toks[*nTok].tokT = tokT;
-  if (text == NULL) {
-      toks[*nTok].valT = Num;
-      toks[*nTok].tokVal.num = num;
+  toks[*nTok].valT = valT;
+  if (valT == Num) {
+      toks[*nTok].tokVal.num = newVal->num;
+  } else if (valT == Text) {
+      toks[*nTok].tokVal.text = newVal->text;
+  } else if (valT == None) {
+
   } else {
-      toks[*nTok].valT = Text;
-      toks[*nTok].tokVal.text = text;
+      fprintf(stderr, "addTok: invalid value for value type\n");
+      exit(EXIT_FAILURE);
   }
   ++*nTok;
 }
@@ -228,6 +234,7 @@ static Tok *tokenize(char *str, size_t *nTok) {
   size_t strIdx = 0;
   size_t strLen = strlen(str);
   double const_;
+  union TokVal newVal;
 
   /*
    * TODO: Add other types of tokens to token list
@@ -237,13 +244,13 @@ static Tok *tokenize(char *str, size_t *nTok) {
 
   while (strIdx < strLen) {
     if (compareWord("sin", &strIdx, str, strLen) == 1) {
-      addTok(toks, nTok, Sin, NULL, 1);
+      addTok(toks, nTok, Sin, &newVal, None);
     } else if (compareWord("cos", &strIdx, str, strLen) == 1) {
-      addTok(toks, nTok, Cos, NULL, 1);
+      addTok(toks, nTok, Cos, &newVal, None);
     } else if (compareWord("(", &strIdx, str, strLen) == 1) {
-      addTok(toks, nTok, LPar, NULL, 1);
+      addTok(toks, nTok, LPar, &newVal, None);
     } else if (compareWord(")", &strIdx, str, strLen) == 1) {
-      addTok(toks, nTok, RPar, NULL, 1);
+      addTok(toks, nTok, RPar, &newVal, None);
     } else if (strIdx + strlen("log_?") <= strLen &&
                compareWord("log_", &strIdx, str, strLen) == 1) {
       size_t TEXT_LEN = 1;
@@ -252,14 +259,17 @@ static Tok *tokenize(char *str, size_t *nTok) {
       debug("tokenize: taking log branch\n");
 
       text[0] = str[strIdx];
+      ++strIdx;
 
       debug("tokenize: text: %s\n", text);
       debug("tokenize: text[0]: %c\n", text[0]);
 
-      addTok(toks, nTok, Log, text, 1);
+      newVal.text = text;
+      addTok(toks, nTok, Log, &newVal, Text);
     } else if (checkConst(&const_, &strIdx, str, strLen) == 1) {
         debug("tokenize: const_: %lf\n", const_);
-      addTok(toks, nTok, Const, NULL, const_);
+        newVal.num = const_;
+      addTok(toks, nTok, Const, &newVal, Num);
     } else {
       ++strIdx;
     }
