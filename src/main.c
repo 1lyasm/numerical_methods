@@ -21,6 +21,7 @@ enum TokT {
   Letter,
   Star,
   Minus,
+  Divide,
   Tan,
   Cot,
   Arcsin,
@@ -42,15 +43,14 @@ typedef struct {
   enum ValT valT;
 } Tok;
 
-
 typedef struct {
-    char letter;
-    double val;
+  char letter;
+  double val;
 } Point;
 
 typedef struct {
-    Point *points;
-    size_t nPoint;
+  Point *points;
+  size_t nPoint;
 } Points;
 
 static void *fmalloc(size_t nByte) {
@@ -198,6 +198,8 @@ static char *tokTToStr(enum TokT tokT) {
     strcpy(str, "Arctan");
   } else if (tokT == Arccot) {
     strcpy(str, "Arccot");
+  } else if (tokT == Divide) {
+    strcpy(str, "Divide");
   } else {
     fprintf(stderr, "tokTToStr: token type has invalid value, exiting\n");
     exit(EXIT_FAILURE);
@@ -269,6 +271,7 @@ static int checkConst(double *res, size_t *strIdx, char *str) {
   int isConst = 0;
   int nRead;
   int scanRes = sscanf(&(str[*strIdx]), " %lf%n", res, &nRead);
+
   if (!(scanRes == 0 || scanRes == EOF)) {
     isConst = 1;
   }
@@ -311,6 +314,9 @@ static Tok *tokenize(char *str, size_t *nTok) {
     } else if (str[strIdx] == '-') {
       ++strIdx;
       addTok(toks, nTok, Minus, &newVal, None);
+    } else if (str[strIdx] == '/') {
+      ++strIdx;
+      addTok(toks, nTok, Divide, &newVal, None);
     } else if (compareWord("sin", &strIdx, str, strLen) == 1) {
       addTok(toks, nTok, Sin, &newVal, None);
     } else if (compareWord("cos", &strIdx, str, strLen) == 1) {
@@ -336,10 +342,8 @@ static Tok *tokenize(char *str, size_t *nTok) {
       size_t TEXT_LEN = 1;
       char *text = fcalloc((TEXT_LEN + 1), sizeof(char));
 
-
       text[0] = str[strIdx];
       ++strIdx;
-
 
       newVal.text = text;
       addTok(toks, nTok, Log, &newVal, Text);
@@ -401,50 +405,75 @@ static void freeToks(Tok *toks, size_t nTok) {
 }
 
 static Points *readPoints(Tok *toks, size_t nTok) {
-    size_t N_MAX_POINT = 16;
-    Points *points = fmalloc(sizeof(Points));
-    size_t i;
+  size_t N_MAX_POINT = 16;
+  Points *points = fmalloc(sizeof(Points));
+  size_t i;
 
+  points->points = fmalloc(N_MAX_POINT * sizeof(Point));
+  points->nPoint = 0;
 
-    points->points = fmalloc(N_MAX_POINT * sizeof(Point));
-    points->nPoint = 0;
+  for (i = 0; i < nTok; ++i) {
+    if (toks[i].valT == Text && isLetter(toks[i].tokVal.text[0])) {
+      char char_ = toks[i].tokVal.text[0];
+      printf(GREEN_TEXT "\nEnter value of %c: ", char_);
+      printf(RESET_TEXT);
 
-    for (i = 0; i < nTok; ++i) {
-        if (toks[i].valT == Text && isLetter(toks[i].tokVal.text[0])) {
-            char char_ = toks[i].tokVal.text[0];
-            printf(GREEN_TEXT "\nEnter value of %c: ", char_);
-            printf(RESET_TEXT);
+      points->points[points->nPoint].letter = char_;
+      scanf(" %lf", &(points->points[points->nPoint].val));
 
-            points->points[points->nPoint].letter = char_;
-            scanf(" %lf", &(points->points[points->nPoint].val));
-
-            ++(points->nPoint);
-        }
+      ++(points->nPoint);
     }
+  }
 
-    return points;
+  return points;
 }
 
 static void debugPoints(Points *points) {
-    size_t i;
+  size_t i;
 
-    debug("debugPoints: points: [ ");
-    for (i = 0; i < points->nPoint; ++i) {
-        debug("{%c: %lf} ", points->points[i].letter, points->points[i].val);
-    }
-    debug(" ]\n");
+  debug("debugPoints: points: [ ");
+  for (i = 0; i < points->nPoint; ++i) {
+    debug("{%c: %lf} ", points->points[i].letter, points->points[i].val);
+  }
+  debug(" ]\n");
 }
 
 static void freePoints(Points *points) {
-    free(points->points);
-    free(points);
+  free(points->points);
+  free(points);
 }
 
-static double eval(Points *points, Tok *toks, size_t nTok)  {
-    double res;
+static int isBinOp(Tok *tok) {
+  int res = 0;
 
+  if (tok->tokT == Plus || tok->tokT == Minus || tok->tokT == Star ||
+      tok->tokT == Caret || tok->tokT == Divide) {
+    res = 1;
+  }
 
-    return res;
+  return res;
+}
+
+static void mergeTwoConsts(Points *points, Tok *toks, size_t *nTok) {
+  size_t i;
+
+  for (i = 0; i < *nTok; ++i) {
+    if (i + 2 < *nTok && isBinOp(&toks[i + 1]) == 1) {
+      /*
+       * Produce result and merge
+       */
+    }
+  }
+}
+
+static double eval(Points *points, Tok *toks, size_t nTok) {
+  double res;
+
+  while (nTok > 1) {
+    mergeTwoConsts(points, toks, &nTok);
+  }
+
+  return res;
 }
 
 static void bisection(void) {
@@ -458,7 +487,7 @@ static void bisection(void) {
   toks = readToks(&nTok);
   points = readPoints(toks, nTok);
   debugPoints(points);
-  res = eval(points, toks, nTok);
+  /* res = eval(points, toks, nTok); */
 
   freePoints(points);
   freeToks(toks, nTok);
