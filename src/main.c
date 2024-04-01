@@ -9,7 +9,19 @@
 
 #define RESET_TEXT "\033[0m"
 
-enum TokT { LPar, RPar, Const, Sin, Cos, Log, Plus, Caret, Var };
+enum TokT {
+  LPar,
+  RPar,
+  Const,
+  Sin,
+  Cos,
+  Log,
+  Plus,
+  Caret,
+  Letter,
+  Star,
+  Minus
+};
 
 union TokVal {
   double num;
@@ -151,8 +163,12 @@ static char *tokTToStr(enum TokT tokT) {
     strcpy(str, "Plus");
   } else if (tokT == Caret) {
     strcpy(str, "Caret");
-  } else if (tokT == Var) {
-    strcpy(str, "Var");
+  } else if (tokT == Letter) {
+    strcpy(str, "Letter");
+  } else if (tokT == Star) {
+    strcpy(str, "Star");
+  } else if (tokT == Minus) {
+    strcpy(str, "Minus");
   } else {
     fprintf(stderr, "tokTToStr: token type has invalid value, exiting\n");
     exit(EXIT_FAILURE);
@@ -236,6 +252,17 @@ static int checkConst(double *res, size_t *strIdx, char *str) {
   return isConst;
 }
 
+static int isLetter(char *str, size_t idx) {
+  char char_ = str[idx];
+  int res = 0;
+  if (char_ >= 'a' && char_ <= 'z') {
+    res = 1;
+  } else if (char_ >= 'A' && char_ <= 'Z') {
+    res = 1;
+  }
+  return res;
+}
+
 static Tok *tokenize(char *str, size_t *nTok) {
   size_t N_MAX_TOK = 1024;
   Tok *toks = fmalloc(N_MAX_TOK * sizeof(Tok));
@@ -258,6 +285,12 @@ static Tok *tokenize(char *str, size_t *nTok) {
     } else if (str[strIdx] == '^') {
       ++strIdx;
       addTok(toks, nTok, Caret, &newVal, None);
+    } else if (str[strIdx] == '*') {
+      ++strIdx;
+      addTok(toks, nTok, Star, &newVal, None);
+    } else if (str[strIdx] == '-') {
+      ++strIdx;
+      addTok(toks, nTok, Minus, &newVal, None);
     } else if (compareWord("sin", &strIdx, str, strLen) == 1) {
       addTok(toks, nTok, Sin, &newVal, None);
     } else if (compareWord("cos", &strIdx, str, strLen) == 1) {
@@ -285,6 +318,13 @@ static Tok *tokenize(char *str, size_t *nTok) {
       debug("tokenize: const_: %lf\n", const_);
       newVal.num = const_;
       addTok(toks, nTok, Const, &newVal, Num);
+    } else if (isLetter(str, strIdx) == 1) {
+      size_t TEXT_LEN = 1;
+      char *text = fcalloc((TEXT_LEN + 1), sizeof(char));
+      text[0] = str[strIdx];
+      ++strIdx;
+      newVal.text = text;
+      addTok(toks, nTok, Letter, &newVal, Text);
     } else {
       ++strIdx;
     }
