@@ -22,7 +22,11 @@ enum TokT {
   Star,
   Minus,
   Tan,
-  Cot
+  Cot,
+  Arcsin,
+  Arccos,
+  Arctan,
+  Arccot
 };
 
 union TokVal {
@@ -172,9 +176,17 @@ static char *tokTToStr(enum TokT tokT) {
   } else if (tokT == Minus) {
     strcpy(str, "Minus");
   } else if (tokT == Tan) {
-      strcpy(str, "Tan");
+    strcpy(str, "Tan");
   } else if (tokT == Cot) {
-      strcpy(str, "Cot");
+    strcpy(str, "Cot");
+  } else if (tokT == Arcsin) {
+    strcpy(str, "Arcsin");
+  } else if (tokT == Arccos) {
+    strcpy(str, "Arccos");
+  } else if (tokT == Arctan) {
+    strcpy(str, "Arctan");
+  } else if (tokT == Arccot) {
+    strcpy(str, "Arccot");
   } else {
     fprintf(stderr, "tokTToStr: token type has invalid value, exiting\n");
     exit(EXIT_FAILURE);
@@ -302,9 +314,17 @@ static Tok *tokenize(char *str, size_t *nTok) {
     } else if (compareWord("cos", &strIdx, str, strLen) == 1) {
       addTok(toks, nTok, Cos, &newVal, None);
     } else if (compareWord("tan", &strIdx, str, strLen) == 1) {
-        addTok(toks, nTok, Tan, &newVal, None);
+      addTok(toks, nTok, Tan, &newVal, None);
     } else if (compareWord("cot", &strIdx, str, strLen) == 1) {
-        addTok(toks, nTok, Cot, &newVal, None);
+      addTok(toks, nTok, Cot, &newVal, None);
+    } else if (compareWord("arcsin", &strIdx, str, strLen) == 1) {
+      addTok(toks, nTok, Arcsin, &newVal, None);
+    } else if (compareWord("arccos", &strIdx, str, strLen) == 1) {
+      addTok(toks, nTok, Arccos, &newVal, None);
+    } else if (compareWord("arctan", &strIdx, str, strLen) == 1) {
+      addTok(toks, nTok, Arctan, &newVal, None);
+    } else if (compareWord("arccot", &strIdx, str, strLen) == 1) {
+      addTok(toks, nTok, Arccot, &newVal, None);
     } else if (compareWord("(", &strIdx, str, strLen) == 1) {
       addTok(toks, nTok, LPar, &newVal, None);
     } else if (compareWord(")", &strIdx, str, strLen) == 1) {
