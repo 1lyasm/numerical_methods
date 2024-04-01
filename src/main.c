@@ -258,14 +258,11 @@ static int checkConst(double *res, size_t *strIdx, char *str) {
   int isConst = 0;
   int nRead;
   int scanRes = sscanf(&(str[*strIdx]), " %lf%n", res, &nRead);
-  debug("checkConst: result: %lf\n", *res);
   if (!(scanRes == 0 || scanRes == EOF)) {
     isConst = 1;
   }
   if (isConst == 1) {
     *strIdx += (size_t)nRead;
-    debug("checkConst: saw constant, nRead: %d, new strIdx: %zu\n", nRead,
-          *strIdx);
   }
   return isConst;
 }
@@ -329,18 +326,14 @@ static Tok *tokenize(char *str, size_t *nTok) {
       size_t TEXT_LEN = 1;
       char *text = fcalloc((TEXT_LEN + 1), sizeof(char));
 
-      debug("tokenize: taking log branch\n");
 
       text[0] = str[strIdx];
       ++strIdx;
 
-      debug("tokenize: text: %s\n", text);
-      debug("tokenize: text[0]: %c\n", text[0]);
 
       newVal.text = text;
       addTok(toks, nTok, Log, &newVal, Text);
     } else if (checkConst(&const_, &strIdx, str) == 1) {
-      debug("tokenize: const_: %lf\n", const_);
       newVal.num = const_;
       addTok(toks, nTok, Const, &newVal, Num);
     } else if (isLetter(str, strIdx) == 1) {
@@ -355,7 +348,6 @@ static Tok *tokenize(char *str, size_t *nTok) {
     }
   }
 
-  debug("tokenize: token count: %lu\n", *nTok);
   debugToks(toks, *nTok);
 
   return toks;
