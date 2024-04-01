@@ -42,6 +42,17 @@ typedef struct {
   enum ValT valT;
 } Tok;
 
+
+typedef struct {
+    char letter;
+    double val;
+} Point;
+
+typedef struct {
+    Point *points;
+    size_t nPoint;
+} Points;
+
 static void *fmalloc(size_t nByte) {
   void *buffer = malloc(nByte);
 
@@ -267,8 +278,7 @@ static int checkConst(double *res, size_t *strIdx, char *str) {
   return isConst;
 }
 
-static int isLetter(char *str, size_t idx) {
-  char char_ = str[idx];
+static int isLetter(char char_) {
   int res = 0;
   if (char_ >= 'a' && char_ <= 'z') {
     res = 1;
@@ -336,7 +346,7 @@ static Tok *tokenize(char *str, size_t *nTok) {
     } else if (checkConst(&const_, &strIdx, str) == 1) {
       newVal.num = const_;
       addTok(toks, nTok, Const, &newVal, Num);
-    } else if (isLetter(str, strIdx) == 1) {
+    } else if (isLetter(str[strIdx]) == 1) {
       size_t TEXT_LEN = 1;
       char *text = fcalloc((TEXT_LEN + 1), sizeof(char));
       text[0] = str[strIdx];
@@ -390,14 +400,67 @@ static void freeToks(Tok *toks, size_t nTok) {
   free(toks);
 }
 
+static Points *readPoints(Tok *toks, size_t nTok) {
+    size_t N_MAX_POINT = 16;
+    Points *points = fmalloc(sizeof(Points));
+    size_t i;
+
+
+    points->points = fmalloc(N_MAX_POINT * sizeof(Point));
+    points->nPoint = 0;
+
+    for (i = 0; i < nTok; ++i) {
+        if (toks[i].valT == Text && isLetter(toks[i].tokVal.text[0])) {
+            char char_ = toks[i].tokVal.text[0];
+            printf(GREEN_TEXT "\nEnter value of %c: ", char_);
+            printf(RESET_TEXT);
+
+            points->points[points->nPoint].letter = char_;
+            scanf(" %lf", &(points->points[points->nPoint].val));
+
+            ++(points->nPoint);
+        }
+    }
+
+    return points;
+}
+
+static void debugPoints(Points *points) {
+    size_t i;
+
+    debug("debugPoints: points: [ ");
+    for (i = 0; i < points->nPoint; ++i) {
+        debug("{%c: %lf} ", points->points[i].letter, points->points[i].val);
+    }
+    debug(" ]\n");
+}
+
+static void freePoints(Points *points) {
+    free(points->points);
+    free(points);
+}
+
+static double eval(Points *points, Tok *toks, size_t nTok)  {
+    double res;
+
+
+    return res;
+}
+
 static void bisection(void) {
   Tok *toks;
   size_t nTok;
+  double res;
+  Points *points;
 
   debug("\nbisection: called\n");
 
   toks = readToks(&nTok);
+  points = readPoints(toks, nTok);
+  debugPoints(points);
+  res = eval(points, toks, nTok);
 
+  freePoints(points);
   freeToks(toks, nTok);
 }
 
