@@ -289,11 +289,6 @@ static Tok *tokenize(char *str, size_t *nTok) {
   double const_;
   union TokVal newVal;
 
-  /*
-   * TODO: Add other types of tokens, such as plus, caret and variable, to token
-   * list
-   */
-
   *nTok = 0;
 
   while (strIdx < strLen) {
