@@ -255,6 +255,9 @@ static Tok *tokenize(char *str, size_t *nTok) {
     if (str[strIdx] == '+') {
       ++strIdx;
       addTok(toks, nTok, Plus, &newVal, None);
+    } else if (str[strIdx] == '^') {
+      ++strIdx;
+      addTok(toks, nTok, Caret, &newVal, None);
     } else if (compareWord("sin", &strIdx, str, strLen) == 1) {
       addTok(toks, nTok, Sin, &newVal, None);
     } else if (compareWord("cos", &strIdx, str, strLen) == 1) {
