@@ -20,7 +20,9 @@ enum TokT {
   Caret,
   Letter,
   Star,
-  Minus
+  Minus,
+  Tan,
+  Cot
 };
 
 union TokVal {
@@ -169,6 +171,10 @@ static char *tokTToStr(enum TokT tokT) {
     strcpy(str, "Star");
   } else if (tokT == Minus) {
     strcpy(str, "Minus");
+  } else if (tokT == Tan) {
+      strcpy(str, "Tan");
+  } else if (tokT == Cot) {
+      strcpy(str, "Cot");
   } else {
     fprintf(stderr, "tokTToStr: token type has invalid value, exiting\n");
     exit(EXIT_FAILURE);
@@ -295,6 +301,10 @@ static Tok *tokenize(char *str, size_t *nTok) {
       addTok(toks, nTok, Sin, &newVal, None);
     } else if (compareWord("cos", &strIdx, str, strLen) == 1) {
       addTok(toks, nTok, Cos, &newVal, None);
+    } else if (compareWord("tan", &strIdx, str, strLen) == 1) {
+        addTok(toks, nTok, Tan, &newVal, None);
+    } else if (compareWord("cot", &strIdx, str, strLen) == 1) {
+        addTok(toks, nTok, Cot, &newVal, None);
     } else if (compareWord("(", &strIdx, str, strLen) == 1) {
       addTok(toks, nTok, LPar, &newVal, None);
     } else if (compareWord(")", &strIdx, str, strLen) == 1) {
