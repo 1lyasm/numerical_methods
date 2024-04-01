@@ -12,13 +12,16 @@
 enum TokT { LPar, RPar, Const, Sin, Cos, Log };
 
 union TokVal {
-  double number;
+  double num;
   char *text;
 };
+
+enum ValT {Num, Text};
 
 typedef struct {
   enum TokT tokT;
   union TokVal tokVal;
+  enum ValT valT;
 } Tok;
 
 static void *fmalloc(size_t nByte) {
@@ -153,14 +156,17 @@ static char *tokTToStr(enum TokT tokT) {
 
 static void debugToks(Tok *toks, size_t nTok) {
   size_t i;
-  debug("printToks: tokens: [");
+  debug("debugToks: tokens: [");
   for (i = 0; i < nTok; ++i) {
     char *str = tokTToStr(toks[i].tokT);
 
-    if (toks[i].tokVal.text == NULL) {
-      debug("%s ", str);
-    } else {
+    if (toks[i].valT == Num) {
+      debug("{%s, %lf}", str, toks[i].tokVal.num);
+    } else if (toks[i].valT == Text) {
       debug("{%s, %s} ", str, toks[i].tokVal.text);
+    } else {
+        fprintf(stderr, "debugToks: invalid value for value type\n");
+        exit(EXIT_FAILURE);
     }
     free(str);
   }
@@ -189,10 +195,31 @@ static size_t compareWord(char *target, size_t *strIdx, char *str,
   return areEq;
 }
 
-static void addTok(Tok *toks, size_t *nTok, enum TokT tokT, char *text) {
+static void addTok(Tok *toks, size_t *nTok, enum TokT tokT, char *text, double num) {
   toks[*nTok].tokT = tokT;
-  toks[*nTok].tokVal.text = text;
+  if (text == NULL) {
+      toks[*nTok].valT = Num;
+      toks[*nTok].tokVal.num = num;
+  } else {
+      toks[*nTok].valT = Text;
+      toks[*nTok].tokVal.text = text;
+  }
   ++*nTok;
+}
+
+static int checkConst(double *res, size_t *strIdx, char *str, size_t strLen) {
+    int isConst = 0;
+    int nRead;
+    int scanRes = sscanf(&(str[*strIdx]), " %lf%n", res, &nRead);
+    debug("checkConst: result: %lf\n", *res);
+    if (!(scanRes == 0 || scanRes == EOF)) {
+        isConst = 1;
+    }
+    if (isConst == 1) {
+        *strIdx += nRead;
+        debug("checkConst: saw constant, nRead: %d, new strIdx: %zu\n", nRead, *strIdx);
+    }
+    return isConst;
 }
 
 static Tok *tokenize(char *str, size_t *nTok) {
@@ -200,6 +227,7 @@ static Tok *tokenize(char *str, size_t *nTok) {
   Tok *toks = fmalloc(N_MAX_TOK * sizeof(Tok));
   size_t strIdx = 0;
   size_t strLen = strlen(str);
+  double const_;
 
   /*
    * TODO: Add other types of tokens to token list
@@ -209,13 +237,13 @@ static Tok *tokenize(char *str, size_t *nTok) {
 
   while (strIdx < strLen) {
     if (compareWord("sin", &strIdx, str, strLen) == 1) {
-      addTok(toks, nTok, Sin, NULL);
+      addTok(toks, nTok, Sin, NULL, 1);
     } else if (compareWord("cos", &strIdx, str, strLen) == 1) {
-      addTok(toks, nTok, Cos, NULL);
+      addTok(toks, nTok, Cos, NULL, 1);
     } else if (compareWord("(", &strIdx, str, strLen) == 1) {
-      addTok(toks, nTok, LPar, NULL);
+      addTok(toks, nTok, LPar, NULL, 1);
     } else if (compareWord(")", &strIdx, str, strLen) == 1) {
-      addTok(toks, nTok, RPar, NULL);
+      addTok(toks, nTok, RPar, NULL, 1);
     } else if (strIdx + strlen("log_?") <= strLen &&
                compareWord("log_", &strIdx, str, strLen) == 1) {
       size_t TEXT_LEN = 1;
@@ -228,7 +256,10 @@ static Tok *tokenize(char *str, size_t *nTok) {
       debug("tokenize: text: %s\n", text);
       debug("tokenize: text[0]: %c\n", text[0]);
 
-      addTok(toks, nTok, Log, text);
+      addTok(toks, nTok, Log, text, 1);
+    } else if (checkConst(&const_, &strIdx, str, strLen) == 1) {
+        debug("tokenize: const_: %lf\n", const_);
+      addTok(toks, nTok, Const, NULL, const_);
     } else {
       ++strIdx;
     }
@@ -269,7 +300,9 @@ static void freeToks(Tok *toks, size_t nTok) {
   size_t i;
 
   for (i = 0; i < nTok; ++i) {
-    free(toks[i].tokVal.text);
+      if (toks[i].valT == Text) {
+        free(toks[i].tokVal.text);
+      }
   }
 
   free(toks);
