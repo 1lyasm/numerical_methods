@@ -1,5 +1,5 @@
 compile:
-	clang -g -fsanitize=address -Weverything \
+	clang -g -fsanitize=address -Wall \
 		-Wno-unsafe-buffer-usage \
 		-Wno-format-nonliteral \
 		-Wno-padded \
