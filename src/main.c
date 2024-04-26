@@ -2,6 +2,10 @@
 #include <stdlib.h>
 #include <string.h>
 
+typedef enum {
+    Plus
+} Operator;
+
 void printMenuMessage() {
   printf("\n");
   printf("1. Bisection method\n");
@@ -24,6 +28,8 @@ void printMenuMessage() {
 int main() {
     char *input = malloc(64 * sizeof(char));
     int choice;
+    Operator *operators;
+    double *constants;
     do {
         printMenuMessage();
         scanf(" %s", input);
