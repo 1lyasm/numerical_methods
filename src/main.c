@@ -1,9 +1,15 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 #define GREEN_TEXT "\033[0;32m"
 #define RED_TEXT "\033[31m"
 #define RESET_TEXT "\033[0m"
+
+static void fail(char *msg) {
+  fprintf(stderr, "\n%s\n", msg);
+  exit(EXIT_FAILURE);
+}
 
 static void printMainMenuMessage(void) {
   printf("\n");
@@ -31,35 +37,51 @@ static void printMainMenuMessage(void) {
 
 int main() {
   int input;
-  size_t maximumOperatorCount = 64, maximumValueCount = 64;
-  size_t maximumTokenLength = 64;
-  size_t i;
-  char **operators, **values;
+  int maximumOperatorCount = 64, maximumValueCount = 64;
+  int maximumTokenLength = 64;
+  int i;
+  char **operators = malloc((size_t)maximumOperatorCount * sizeof(char *));
+  char **values = malloc((size_t)maximumValueCount * sizeof(char *));
+  size_t lineSize = 128;
+  char *line = malloc(lineSize * sizeof(char));
+  int wantsToExit = 0;
 
-  operators = malloc(maximumOperatorCount * sizeof(char *));
-  values = malloc(maximumValueCount * sizeof(char *));
   for (i = 0; i < maximumOperatorCount; ++i) {
-      operators[i] = malloc(maximumTokenLength * sizeof(char));
+    operators[i] = malloc((size_t)maximumTokenLength * sizeof(char));
   }
   for (i = 0; i < maximumValueCount; ++i) {
-      values[i] = malloc(maximumTokenLength * sizeof(char));
+    values[i] = malloc((size_t)maximumTokenLength * sizeof(char));
   }
 
   do {
-      printMainMenuMessage();
-      scanf(" %d", &input);
+    printMainMenuMessage();
+    scanf(" %d", &input);
+    if (input == 11) {
+      wantsToExit = 1;
+    } else {
+      printf("\nEnter the function: ");
+      // Read line twice to skip extra line
+      getline(&line, &lineSize, stdin);
+      if (getline(&line, &lineSize, stdin) == -1) {
+        fail("getline failed");
+      } else {
+        int lineLength = (int)strlen(line) - 1;
+        line[lineLength] = 0;
+        printf("\nLine: '%s'\n", line);
+        printf("\nLine length: %d", lineLength);
+      }
+    }
+  } while (!wantsToExit);
 
-  } while (input != 11);
-
+  free(line);
   for (i = 0; i < maximumValueCount; ++i) {
-      free(values[i]);
+    free(values[i]);
   }
   for (i = 0; i < maximumOperatorCount; ++i) {
-      free(operators[i]);
+    free(operators[i]);
   }
   free(values);
   free(operators);
 
   return 0;
 }
-
