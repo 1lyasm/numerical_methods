@@ -6,6 +6,11 @@
 #define RED_TEXT "\033[31m"
 #define RESET_TEXT "\033[0m"
 
+typedef struct {
+    char *string;
+    int index;
+} Token;
+
 static void fail(char *msg) {
   fprintf(stderr, "\n%s\n", msg);
   exit(EXIT_FAILURE);
