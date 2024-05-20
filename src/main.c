@@ -67,8 +67,6 @@ int main() {
       } else {
         int lineLength = (int)strlen(line) - 1;
         line[lineLength] = 0;
-        printf("\nLine: '%s'\n", line);
-        printf("\nLine length: %d", lineLength);
       }
     }
   } while (!wantsToExit);
