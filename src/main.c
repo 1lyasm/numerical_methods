@@ -1,9 +1,8 @@
 #include <stdio.h>
+#include <stdlib.h>
 
-#define BLUE_TEXT "\033[34m"
 #define GREEN_TEXT "\033[0;32m"
 #define RED_TEXT "\033[31m"
-
 #define RESET_TEXT "\033[0m"
 
 static void printMainMenuMessage(void) {
@@ -32,11 +31,34 @@ static void printMainMenuMessage(void) {
 
 int main() {
   int input;
+  size_t maximumOperatorCount = 64, maximumValueCount = 64;
+  size_t maximumTokenLength = 64;
+  size_t i;
+  char **operators, **values;
+
+  operators = malloc(maximumOperatorCount * sizeof(char *));
+  values = malloc(maximumValueCount * sizeof(char *));
+  for (i = 0; i < maximumOperatorCount; ++i) {
+      operators[i] = malloc(maximumTokenLength * sizeof(char));
+  }
+  for (i = 0; i < maximumValueCount; ++i) {
+      values[i] = malloc(maximumTokenLength * sizeof(char));
+  }
 
   do {
       printMainMenuMessage();
       scanf(" %d", &input);
+
   } while (input != 11);
+
+  for (i = 0; i < maximumValueCount; ++i) {
+      free(values[i]);
+  }
+  for (i = 0; i < maximumOperatorCount; ++i) {
+      free(operators[i]);
+  }
+  free(values);
+  free(operators);
 
   return 0;
 }
