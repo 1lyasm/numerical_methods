@@ -1,3 +1,4 @@
+#include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -77,14 +78,33 @@ static int shiftLeft(Token *tokens, int destination, int source,
     return end - offset;
 }
 
-static void computeExpressions(char *operator, Token * tokens,
+static int findOperator(char *target, char **operators,
+                        int operatorCount) {
+    int index = -1;
+    int i;
+
+    for (i = 0; i < operatorCount && index < 0; ++i) {
+        if (strcmp(operators[i], target) == 0) {
+            index = i;
+        }
+    }
+
+    return index;
+}
+
+static void computeExpressions(char **operators,
+                               int operatorCount, Token *tokens,
                                int start, int *end) {
     int i;
     double value = -1;
     for (i = start; i <= *end; ++i) {
         if (tokens[i].tokenType == Operator &&
-            strcmp(tokens[i].operatorString, operator) == 0) {
-            if (tokens[i].operatorString[0] == '*') {
+            findOperator(tokens[i].operatorString, operators,
+                         operatorCount) >= 0) {
+            if (tokens[i].operatorString[0] == '^') {
+                value = pow(tokens[i - 1].constantValue,
+                            tokens[i + 1].constantValue);
+            } else if (tokens[i].operatorString[0] == '*') {
                 value = tokens[i - 1].constantValue *
                         tokens[i + 1].constantValue;
             } else if (tokens[i].operatorString[0] == '/') {
@@ -101,8 +121,7 @@ static void computeExpressions(char *operator, Token * tokens,
             }
             tokens[i - 1].constantValue = value;
             *end = shiftLeft(tokens, i, i + 2, *end);
-            printf("\nAfter shifting: \n");
-            printTokens(tokens, start, *end);
+            --i;
         }
     }
 }
@@ -158,11 +177,57 @@ static double evaluate(double x, Token *tokens, int start,
         result = evaluate(x, tokens, start, end);
     } else {
         while (end > start) {
-            printf("\nStart: %d, end: %d\n", start, end);
-            computeExpressions("*", tokens, start, &end);
-            computeExpressions("/", tokens, start, &end);
-            computeExpressions("-", tokens, start, &end);
-            computeExpressions("+", tokens, start, &end);
+            int multiplicationDivisionLength = 2;
+            char **multiplicationDivision =
+                malloc((size_t)multiplicationDivisionLength *
+                       sizeof(char *));
+            int additionSubtractionLength = 2;
+            char **additionSubtraction =
+                malloc((size_t)additionSubtractionLength *
+                       sizeof(char *));
+            int powerLength = 1;
+            char **power =
+                malloc((size_t)powerLength * sizeof(char *));
+
+            for (i = 0; i < multiplicationDivisionLength; ++i) {
+                multiplicationDivision[i] =
+                    calloc(2, sizeof(char));
+            }
+            multiplicationDivision[0][0] = '*';
+            multiplicationDivision[1][0] = '/';
+
+            for (i = 0; i < additionSubtractionLength; ++i) {
+                additionSubtraction[i] = calloc(2, sizeof(char));
+            }
+            additionSubtraction[0][0] = '+';
+            additionSubtraction[1][0] = '-';
+
+            for (i = 0; i < powerLength; ++i) {
+                power[i] = calloc(2, sizeof(char));
+            }
+            power[0][0] = '^';
+
+            computeExpressions(power, powerLength, tokens, start,
+                               &end);
+            computeExpressions(multiplicationDivision,
+                               multiplicationDivisionLength,
+                               tokens, start, &end);
+            computeExpressions(additionSubtraction,
+                               additionSubtractionLength, tokens,
+                               start, &end);
+
+            for (i = 0; i < multiplicationDivisionLength; ++i) {
+                free(multiplicationDivision[i]);
+            }
+            for (i = 0; i < additionSubtractionLength; ++i) {
+                free(additionSubtraction[i]);
+            }
+            for (i = 0; i < powerLength; ++i) {
+                free(power[i]);
+            }
+            free(multiplicationDivision);
+            free(additionSubtraction);
+            free(power);
         }
         result = tokens[start].constantValue;
 
@@ -220,7 +285,7 @@ int main() {
     int i;
     Token *tokens =
         malloc((size_t)maximumTokenCount * sizeof(Token));
-    int tokenCount = 0;
+    int tokenCount = -1;
     size_t lineSize = 128;
     char *line = malloc(lineSize * sizeof(char));
     int wantsToExit = 0;
@@ -239,6 +304,7 @@ int main() {
             } else {
                 int lineLength = (int)strlen(line) - 1;
 
+                tokenCount = 0;
                 line[lineLength] = 0;
                 for (i = 0; i < lineLength; ++i) {
                     int consumedToken = 1;
@@ -253,7 +319,8 @@ int main() {
 
                         tokens[tokenCount].tokenType = Constant;
                         tokens[tokenCount].constantValue = value;
-                    } else if (line[i] == '+' ||
+                    } else if (line[i] == '^' ||
+                               line[i] == '+' ||
                                line[i] == '-' ||
                                line[i] == '*' ||
                                line[i] == '/' ||
@@ -277,16 +344,17 @@ int main() {
                     bisect(tokens, tokenCount,
                            maximumOperatorLength);
                 }
+
+                for (i = 0; i < tokenCount; ++i) {
+                    if (tokens[i].tokenType == Operator) {
+                        free(tokens[i].operatorString);
+                    }
+                }
             }
         }
     } while (!wantsToExit);
 
     free(line);
-    for (i = 0; i < tokenCount; ++i) {
-        if (tokens[i].tokenType == Operator) {
-            free(tokens[i].operatorString);
-        }
-    }
     free(tokens);
 
     return 0;
