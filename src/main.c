@@ -6,9 +6,12 @@
 #define RED_TEXT "\033[31m"
 #define RESET_TEXT "\033[0m"
 
+typedef enum { Constant, Operator } TokenType;
+
 typedef struct {
-    char *string;
-    int index;
+    TokenType tokenType;
+    double constantValue;
+    char *operatorValue;
 } Token;
 
 static void fail(char *msg) {
@@ -43,42 +46,87 @@ static void printMainMenuMessage(void) {
     printf(GREEN_TEXT "Choice: " RESET_TEXT);
 }
 
-static double evaluate(double x, Token *operators,
-                       int operatorCount, Token *values,
-                       int valueCount) {
-    return 0;
+static void printTokens(Token *tokens, int start, int end) {
+    int i;
+
+    printf("\nTokens: [ ");
+    for (i = start; i <= end; ++i) {
+        if (tokens[i].tokenType == Constant) {
+            printf("%lf", tokens[i].constantValue);
+        } else {
+            printf("'%s'", tokens[i].operatorValue);
+        }
+        if (i != end) {
+            printf(", ");
+        }
+    }
+    printf(" ]\n");
 }
 
-static void bisect(Token *operators, int operatorCount,
-                   Token *values, int valueCount) {
+static double evaluate(double x, Token *tokens, int start,
+                       int end) {
+    double result = -1;
+    int i;
+    int leftParenthesisIndex = -1;
+    int rightParenthesisIndex = -1;
+
+    for (i = start; i <= end && leftParenthesisIndex < 0; ++i) {
+        if (tokens[i].tokenType == Operator &&
+            tokens[i].operatorValue[0] == '(') {
+            leftParenthesisIndex = i;
+        }
+    }
+    if (leftParenthesisIndex >= 0) {
+        for (i = leftParenthesisIndex;
+             i <= end && rightParenthesisIndex < 0; ++i) {
+            if (tokens[i].tokenType == Operator &&
+                tokens[i].operatorValue[0] == ')') {
+                rightParenthesisIndex = i;
+            }
+        }
+    }
+    if (leftParenthesisIndex >= 0 &&
+        rightParenthesisIndex >= 0) {
+        printf("\nLeft parenthesis index: %d\n",
+               leftParenthesisIndex);
+        printf("\nRight parenthesis index: %d\n",
+               rightParenthesisIndex);
+        evaluate(x, tokens, leftParenthesisIndex + 1,
+                 rightParenthesisIndex - 1);
+    } else {
+        printTokens(tokens, start, end);
+
+        if (tokens[start + 1].operatorValue[0] == '*') {
+            result = tokens[start].constantValue *
+                     tokens[start + 2].constantValue;
+        } else if (tokens[start + 1].operatorValue[0] == '+') {
+            result = tokens[start].constantValue +
+                     tokens[start + 2].constantValue;
+        }
+
+        printf("\nChild result: %lf\n", result);
+    }
+
+    return result;
+}
+
+static void bisect(Token *tokens, int tokenCount) {
     double x = 1;
     double result;
-    result = evaluate(x, operators, operatorCount, values,
-                      valueCount);
-    printf("Bisect: result: %lf\n", result);
+
+    result = evaluate(x, tokens, 0, tokenCount - 1);
+    printf("\nBisect: result: %lf\n", result);
 }
 
 int main() {
     int input;
-    int maximumOperatorCount = 64, maximumValueCount = 64;
-    int maximumTokenLength = 64;
+    int maximumTokenCount = 64;
     int i;
-    Token *operators =
-        malloc((size_t)maximumOperatorCount * sizeof(Token));
-    Token *values =
-        malloc((size_t)maximumValueCount * sizeof(Token));
+    Token *tokens =
+        malloc((size_t)maximumTokenCount * sizeof(Token));
     size_t lineSize = 128;
     char *line = malloc(lineSize * sizeof(char));
     int wantsToExit = 0;
-
-    for (i = 0; i < maximumOperatorCount; ++i) {
-        operators[i].string =
-            calloc((size_t)maximumTokenLength, sizeof(char));
-    }
-    for (i = 0; i < maximumValueCount; ++i) {
-        values[i].string =
-            calloc((size_t)maximumTokenLength, sizeof(char));
-    }
 
     do {
         printMainMenuMessage();
@@ -93,48 +141,56 @@ int main() {
                 fail("getline failed");
             } else {
                 int lineLength = (int)strlen(line) - 1;
-                int operatorCount = 0, valueCount = 0;
-                int tokenIndex = 0;
+                int tokenCount = 0;
+
                 line[lineLength] = 0;
                 for (i = 0; i < lineLength; ++i) {
-                    Token *list = NULL;
-                    int *counter = NULL;
+                    int consumedToken = 1;
+
                     if (line[i] >= '0' && line[i] <= '9') {
-                        list = values;
-                        counter = &valueCount;
+                        double value;
+                        int readCount;
+
+                        sscanf(line + i, "%lf%n", &value,
+                               &readCount);
+                        i += readCount - 1;
+
+                        tokens[tokenCount].tokenType = Constant;
+                        tokens[tokenCount].constantValue = value;
                     } else if (line[i] == '+' ||
                                line[i] == '-' ||
                                line[i] == '*' ||
                                line[i] == '/' ||
                                line[i] == '(' ||
                                line[i] == ')') {
-                        list = operators;
-                        counter = &operatorCount;
+                        tokens[tokenCount].tokenType = Operator;
+                        tokens[tokenCount].operatorValue =
+                            calloc(2, sizeof(char));
+                        tokens[tokenCount].operatorValue[0] =
+                            line[i];
+                    } else {
+                        consumedToken = 0;
                     }
-                    if (list != NULL && counter != NULL) {
-                        list[*counter].string[0] = line[i];
-                        list[*counter].index = tokenIndex;
-                        ++*counter;
-                        ++tokenIndex;
+                    if (consumedToken) {
+                        ++tokenCount;
                     }
                 }
+                printTokens(tokens, 0, tokenCount - 1);
+
                 if (input == 1) {
-                    bisect(operators, operatorCount, values,
-                           valueCount);
+                    bisect(tokens, tokenCount);
                 }
             }
         }
     } while (!wantsToExit);
 
     free(line);
-    for (i = 0; i < maximumValueCount; ++i) {
-        free(values[i].string);
+    for (i = 0; i < maximumTokenCount; ++i) {
+        if (tokens[i].tokenType == Operator) {
+            free(tokens[i].operatorValue);
+        }
     }
-    for (i = 0; i < maximumOperatorCount; ++i) {
-        free(operators[i].string);
-    }
-    free(values);
-    free(operators);
+    free(tokens);
 
     return 0;
 }
