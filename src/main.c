@@ -43,6 +43,21 @@ static void printMainMenuMessage(void) {
     printf(GREEN_TEXT "Choice: " RESET_TEXT);
 }
 
+static double evaluate(double x, Token *operators,
+                       int operatorCount, Token *values,
+                       int valueCount) {
+    return 0;
+}
+
+static void bisect(Token *operators, int operatorCount,
+                   Token *values, int valueCount) {
+    double x = 1;
+    double result;
+    result = evaluate(x, operators, operatorCount, values,
+                      valueCount);
+    printf("Bisect: result: %lf\n", result);
+}
+
 int main() {
     int input;
     int maximumOperatorCount = 64, maximumValueCount = 64;
@@ -102,6 +117,10 @@ int main() {
                         ++*counter;
                         ++tokenIndex;
                     }
+                }
+                if (input == 1) {
+                    bisect(operators, operatorCount, values,
+                           valueCount);
                 }
             }
         }
