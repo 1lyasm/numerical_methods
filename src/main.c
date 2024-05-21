@@ -83,6 +83,10 @@ static double evaluate(double x, Token *tokens, int start,
     int i;
     int leftParenthesisIndex = -1;
     int rightParenthesisIndex = -1;
+    int leftParenthesisCount = 1;
+    int rightParenthesisCount = 0;
+
+    printTokens(tokens, start, end);
 
     for (i = start; i <= end && leftParenthesisIndex < 0; ++i) {
         if (tokens[i].tokenType == Operator &&
@@ -91,10 +95,17 @@ static double evaluate(double x, Token *tokens, int start,
         }
     }
     if (leftParenthesisIndex >= 0) {
-        for (i = leftParenthesisIndex;
+        for (i = leftParenthesisIndex + 1;
              i <= end && rightParenthesisIndex < 0; ++i) {
-            if (tokens[i].tokenType == Operator &&
-                tokens[i].operatorString[0] == ')') {
+            if (tokens[i].tokenType == Operator) {
+                if (tokens[i].operatorString[0] == ')') {
+                    ++rightParenthesisCount;
+                } else if (tokens[i].operatorString[0] == '(') {
+                    ++leftParenthesisCount;
+                }
+            }
+            if (rightParenthesisCount >= 1 &&
+                rightParenthesisCount == leftParenthesisCount) {
                 rightParenthesisIndex = i;
             }
         }
@@ -114,10 +125,8 @@ static double evaluate(double x, Token *tokens, int start,
         tokens[leftParenthesisIndex].constantValue = childResult;
         end = shiftLeft(tokens, leftParenthesisIndex + 1,
                         rightParenthesisIndex + 1, end);
-        printTokens(tokens, start, end);
+        result = evaluate(x, tokens, start, end);
     } else {
-        printTokens(tokens, start, end);
-
         if (tokens[start + 1].operatorString[0] == '*') {
             result = tokens[start].constantValue *
                      tokens[start + 2].constantValue;
@@ -161,8 +170,6 @@ static void bisect(Token *tokens, int tokenCount,
     int i;
     Token *tokensCopy =
         copyTokens(tokens, tokenCount, maximumOperatorLength);
-    printf("\nTokens copy: \n");
-    printTokens(tokensCopy, 0, tokenCount - 1);
 
     result = evaluate(x, tokensCopy, 0, tokenCount - 1);
     printf("\nBisect: result: %lf\n", result);
@@ -234,7 +241,6 @@ int main() {
                         ++tokenCount;
                     }
                 }
-                printTokens(tokens, 0, tokenCount - 1);
 
                 if (input == 1) {
                     bisect(tokens, tokenCount,
