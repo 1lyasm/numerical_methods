@@ -77,6 +77,36 @@ static int shiftLeft(Token *tokens, int destination, int source,
     return end - offset;
 }
 
+static void computeExpressions(char *operator, Token * tokens,
+                               int start, int *end) {
+    int i;
+    double value = -1;
+    for (i = start; i <= *end; ++i) {
+        if (tokens[i].tokenType == Operator &&
+            strcmp(tokens[i].operatorString, operator) == 0) {
+            if (tokens[i].operatorString[0] == '*') {
+                value = tokens[i - 1].constantValue *
+                        tokens[i + 1].constantValue;
+            } else if (tokens[i].operatorString[0] == '/') {
+                value = tokens[i - 1].constantValue /
+                        tokens[i + 1].constantValue;
+            } else if (tokens[i].operatorString[0] == '+') {
+                value = tokens[i - 1].constantValue +
+                        tokens[i + 1].constantValue;
+            } else if (tokens[i].operatorString[0] == '-') {
+                value = tokens[i - 1].constantValue -
+                        tokens[i + 1].constantValue;
+            } else {
+                fail("Encountered invalid operator");
+            }
+            tokens[i - 1].constantValue = value;
+            *end = shiftLeft(tokens, i, i + 2, *end);
+            printf("\nAfter shifting: \n");
+            printTokens(tokens, start, *end);
+        }
+    }
+}
+
 static double evaluate(double x, Token *tokens, int start,
                        int end) {
     double result = -1;
@@ -127,28 +157,14 @@ static double evaluate(double x, Token *tokens, int start,
                         rightParenthesisIndex + 1, end);
         result = evaluate(x, tokens, start, end);
     } else {
-        double value;
         while (end > start) {
-            for (i = start; i <= end; ++i) {
-                if (tokens[i].tokenType == Operator) {
-                    if (tokens[i].operatorString[0] == '*') {
-                        value = tokens[i - 1].constantValue *
-                                tokens[i + 1].constantValue;
-                    } else if (tokens[i].operatorString[0] ==
-                               '+') {
-                        value = tokens[i - 1].constantValue +
-                                tokens[i + 1].constantValue;
-                    } else {
-                        fail("Encountered invalid operator");
-                    }
-                    tokens[i - 1].constantValue = value;
-                    end = shiftLeft(tokens, i, i + 2, end);
-                    printf("\nAfter shifting: \n");
-                    printTokens(tokens, start, end);
-                }
-            }
+            printf("\nStart: %d, end: %d\n", start, end);
+            computeExpressions("*", tokens, start, &end);
+            computeExpressions("/", tokens, start, &end);
+            computeExpressions("-", tokens, start, &end);
+            computeExpressions("+", tokens, start, &end);
         }
-        result = value;
+        result = tokens[start].constantValue;
 
         printf("\nChild result: %lf\n", result);
     }
