@@ -127,13 +127,28 @@ static double evaluate(double x, Token *tokens, int start,
                         rightParenthesisIndex + 1, end);
         result = evaluate(x, tokens, start, end);
     } else {
-        if (tokens[start + 1].operatorString[0] == '*') {
-            result = tokens[start].constantValue *
-                     tokens[start + 2].constantValue;
-        } else if (tokens[start + 1].operatorString[0] == '+') {
-            result = tokens[start].constantValue +
-                     tokens[start + 2].constantValue;
+        double value;
+        while (end > start) {
+            for (i = start; i <= end; ++i) {
+                if (tokens[i].tokenType == Operator) {
+                    if (tokens[i].operatorString[0] == '*') {
+                        value = tokens[i - 1].constantValue *
+                                tokens[i + 1].constantValue;
+                    } else if (tokens[i].operatorString[0] ==
+                               '+') {
+                        value = tokens[i - 1].constantValue +
+                                tokens[i + 1].constantValue;
+                    } else {
+                        fail("Encountered invalid operator");
+                    }
+                    tokens[i - 1].constantValue = value;
+                    end = shiftLeft(tokens, i, i + 2, end);
+                    printf("\nAfter shifting: \n");
+                    printTokens(tokens, start, end);
+                }
+            }
         }
+        result = value;
 
         printf("\nChild result: %lf\n", result);
     }
