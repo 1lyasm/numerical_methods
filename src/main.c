@@ -7,6 +7,8 @@
 #define RED_TEXT "\033[31m"
 #define RESET_TEXT "\033[0m"
 
+#define CONSTANT_E 2.718281828459045
+
 typedef enum { Constant, Operator } TokenType;
 
 typedef struct {
@@ -332,6 +334,9 @@ int main() {
                                    sizeof(char));
                         tokens[tokenCount].operatorString[0] =
                             line[i];
+                    } else if (line[i] == 'e') {
+                        tokens[tokenCount].tokenType = Constant;
+                        tokens[tokenCount].constantValue = CONSTANT_E;
                     } else {
                         consumedToken = 0;
                     }
