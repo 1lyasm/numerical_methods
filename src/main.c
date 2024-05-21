@@ -11,7 +11,7 @@ typedef enum { Constant, Operator } TokenType;
 typedef struct {
     TokenType tokenType;
     double constantValue;
-    char *operatorValue;
+    char *operatorString;
 } Token;
 
 static void fail(char *msg) {
@@ -54,13 +54,27 @@ static void printTokens(Token *tokens, int start, int end) {
         if (tokens[i].tokenType == Constant) {
             printf("%lf", tokens[i].constantValue);
         } else {
-            printf("'%s'", tokens[i].operatorValue);
+            printf("'%s'", tokens[i].operatorString);
         }
         if (i != end) {
             printf(", ");
         }
     }
     printf(" ]\n");
+}
+
+static int shiftLeft(Token *tokens, int destination, int source,
+                     int end) {
+    int offset = source - destination;
+    int i;
+
+    for (i = source; i <= end; ++i) {
+        Token temporary = tokens[i - offset];
+        tokens[i - offset] = tokens[i];
+        tokens[i] = temporary;
+    }
+
+    return end - offset;
 }
 
 static double evaluate(double x, Token *tokens, int start,
@@ -72,7 +86,7 @@ static double evaluate(double x, Token *tokens, int start,
 
     for (i = start; i <= end && leftParenthesisIndex < 0; ++i) {
         if (tokens[i].tokenType == Operator &&
-            tokens[i].operatorValue[0] == '(') {
+            tokens[i].operatorString[0] == '(') {
             leftParenthesisIndex = i;
         }
     }
@@ -80,26 +94,34 @@ static double evaluate(double x, Token *tokens, int start,
         for (i = leftParenthesisIndex;
              i <= end && rightParenthesisIndex < 0; ++i) {
             if (tokens[i].tokenType == Operator &&
-                tokens[i].operatorValue[0] == ')') {
+                tokens[i].operatorString[0] == ')') {
                 rightParenthesisIndex = i;
             }
         }
     }
     if (leftParenthesisIndex >= 0 &&
         rightParenthesisIndex >= 0) {
+        double childResult;
         printf("\nLeft parenthesis index: %d\n",
                leftParenthesisIndex);
         printf("\nRight parenthesis index: %d\n",
                rightParenthesisIndex);
-        evaluate(x, tokens, leftParenthesisIndex + 1,
-                 rightParenthesisIndex - 1);
+        childResult =
+            evaluate(x, tokens, leftParenthesisIndex + 1,
+                     rightParenthesisIndex - 1);
+        free(tokens[leftParenthesisIndex].operatorString);
+        tokens[leftParenthesisIndex].tokenType = Constant;
+        tokens[leftParenthesisIndex].constantValue = childResult;
+        end = shiftLeft(tokens, leftParenthesisIndex + 1,
+                        rightParenthesisIndex + 1, end);
+        printTokens(tokens, start, end);
     } else {
         printTokens(tokens, start, end);
 
-        if (tokens[start + 1].operatorValue[0] == '*') {
+        if (tokens[start + 1].operatorString[0] == '*') {
             result = tokens[start].constantValue *
                      tokens[start + 2].constantValue;
-        } else if (tokens[start + 1].operatorValue[0] == '+') {
+        } else if (tokens[start + 1].operatorString[0] == '+') {
             result = tokens[start].constantValue +
                      tokens[start + 2].constantValue;
         }
@@ -110,20 +132,57 @@ static double evaluate(double x, Token *tokens, int start,
     return result;
 }
 
-static void bisect(Token *tokens, int tokenCount) {
+static Token *copyTokens(Token *tokens, int tokenCount,
+                         int maximumOperatorLength) {
+    Token *tokensCopy =
+        malloc((size_t)tokenCount * sizeof(Token));
+    int i;
+
+    for (i = 0; i < tokenCount; ++i) {
+        tokensCopy[i].tokenType = tokens[i].tokenType;
+        if (tokens[i].tokenType == Operator) {
+            tokensCopy[i].operatorString = calloc(
+                (size_t)maximumOperatorLength, sizeof(char));
+            strcpy(tokensCopy[i].operatorString,
+                   tokens[i].operatorString);
+        } else if (tokens[i].tokenType == Constant) {
+            tokensCopy[i].constantValue =
+                tokens[i].constantValue;
+        }
+    }
+
+    return tokensCopy;
+}
+
+static void bisect(Token *tokens, int tokenCount,
+                   int maximumOperatorLength) {
     double x = 1;
     double result;
+    int i;
+    Token *tokensCopy =
+        copyTokens(tokens, tokenCount, maximumOperatorLength);
+    printf("\nTokens copy: \n");
+    printTokens(tokensCopy, 0, tokenCount - 1);
 
-    result = evaluate(x, tokens, 0, tokenCount - 1);
+    result = evaluate(x, tokensCopy, 0, tokenCount - 1);
     printf("\nBisect: result: %lf\n", result);
+
+    for (i = 0; i < tokenCount; ++i) {
+        if (tokensCopy[i].tokenType == Operator) {
+            free(tokensCopy[i].operatorString);
+        }
+    }
+    free(tokensCopy);
 }
 
 int main() {
     int input;
     int maximumTokenCount = 64;
+    int maximumOperatorLength = 10;
     int i;
     Token *tokens =
         malloc((size_t)maximumTokenCount * sizeof(Token));
+    int tokenCount = 0;
     size_t lineSize = 128;
     char *line = malloc(lineSize * sizeof(char));
     int wantsToExit = 0;
@@ -141,7 +200,6 @@ int main() {
                 fail("getline failed");
             } else {
                 int lineLength = (int)strlen(line) - 1;
-                int tokenCount = 0;
 
                 line[lineLength] = 0;
                 for (i = 0; i < lineLength; ++i) {
@@ -164,9 +222,10 @@ int main() {
                                line[i] == '(' ||
                                line[i] == ')') {
                         tokens[tokenCount].tokenType = Operator;
-                        tokens[tokenCount].operatorValue =
-                            calloc(2, sizeof(char));
-                        tokens[tokenCount].operatorValue[0] =
+                        tokens[tokenCount].operatorString =
+                            calloc((size_t)maximumOperatorLength,
+                                   sizeof(char));
+                        tokens[tokenCount].operatorString[0] =
                             line[i];
                     } else {
                         consumedToken = 0;
@@ -178,16 +237,17 @@ int main() {
                 printTokens(tokens, 0, tokenCount - 1);
 
                 if (input == 1) {
-                    bisect(tokens, tokenCount);
+                    bisect(tokens, tokenCount,
+                           maximumOperatorLength);
                 }
             }
         }
     } while (!wantsToExit);
 
     free(line);
-    for (i = 0; i < maximumTokenCount; ++i) {
+    for (i = 0; i < tokenCount; ++i) {
         if (tokens[i].tokenType == Operator) {
-            free(tokens[i].operatorValue);
+            free(tokens[i].operatorString);
         }
     }
     free(tokens);
