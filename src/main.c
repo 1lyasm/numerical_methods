@@ -157,8 +157,8 @@ static void computeExpressions(char **operators,
     }
 }
 
-static double evaluateConstantExpression(double x, Token *tokens, int start,
-                       int end) {
+static double evaluateConstantExpression(Token *tokens,
+                                         int start, int end) {
     double result = -1;
     int i;
     int leftParenthesisIndex = -1;
@@ -197,15 +197,15 @@ static double evaluateConstantExpression(double x, Token *tokens, int start,
                leftParenthesisIndex);
         printf("\nRight parenthesis index: %d\n",
                rightParenthesisIndex);
-        childResult =
-            evaluateConstantExpression(x, tokens, leftParenthesisIndex + 1,
-                     rightParenthesisIndex - 1);
+        childResult = evaluateConstantExpression(
+            tokens, leftParenthesisIndex + 1,
+            rightParenthesisIndex - 1);
         free(tokens[leftParenthesisIndex].operatorString);
         tokens[leftParenthesisIndex].tokenType = Constant;
         tokens[leftParenthesisIndex].constantValue = childResult;
         end = shiftLeft(tokens, leftParenthesisIndex + 1,
                         rightParenthesisIndex + 1, end);
-        result = evaluateConstantExpression(x, tokens, start, end);
+        result = evaluateConstantExpression(tokens, start, end);
     } else {
         while (end > start) {
             int multiplicationDivisionCount = 2;
@@ -314,6 +314,20 @@ static Token *copyTokens(Token *tokens, int tokenCount,
     return tokensCopy;
 }
 
+static double evaluate(double x, Token *tokens, int start,
+                       int end) {
+    int i;
+    for (i = start; i <= end; ++i) {
+        if (tokens[i].tokenType == Operator &&
+            tokens[i].operatorString[0] == 'x') {
+            free(tokens[i].operatorString);
+            tokens[i].tokenType = Constant;
+            tokens[i].constantValue = x;
+        }
+    }
+    return evaluateConstantExpression(tokens, start, end);
+}
+
 static void bisect(Token *tokens, int tokenCount,
                    int maximumOperatorLength) {
     double x = 1;
@@ -322,7 +336,7 @@ static void bisect(Token *tokens, int tokenCount,
     Token *tokensCopy =
         copyTokens(tokens, tokenCount, maximumOperatorLength);
 
-    result = evaluateConstantExpression(x, tokensCopy, 0, tokenCount - 1);
+    result = evaluate(x, tokensCopy, 0, tokenCount - 1);
     printf("\nBisect: result: %lf\n", result);
 
     for (i = 0; i < tokenCount; ++i) {
@@ -380,7 +394,8 @@ int main() {
                                line[i] == '*' ||
                                line[i] == '/' ||
                                line[i] == '(' ||
-                               line[i] == ')') {
+                               line[i] == ')' ||
+                               line[i] == 'x') {
                         tokens[tokenCount].tokenType = Operator;
                         tokens[tokenCount].operatorString =
                             calloc((size_t)maximumOperatorLength,
