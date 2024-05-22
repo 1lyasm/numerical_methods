@@ -94,6 +94,19 @@ static int findOperator(char *target, char **operators,
     return index;
 }
 
+static int compareStrings(char *target, char *destination) {
+    int areEqual = 1;
+    int i;
+
+    for (i = 0; target[i] && destination[i] && areEqual; ++i) {
+        if (target[i] != destination[i]) {
+            areEqual = 0;
+        }
+    }
+
+    return areEqual;
+}
+
 static void computeExpressions(char **operators,
                                int operatorCount, Token *tokens,
                                int start, int *end) {
@@ -103,27 +116,43 @@ static void computeExpressions(char **operators,
         if (tokens[i].tokenType == Operator &&
             findOperator(tokens[i].operatorString, operators,
                          operatorCount) >= 0) {
-            if (tokens[i].operatorString[0] == '^') {
-                value = pow(tokens[i - 1].constantValue,
-                            tokens[i + 1].constantValue);
-            } else if (tokens[i].operatorString[0] == '*') {
-                value = tokens[i - 1].constantValue *
-                        tokens[i + 1].constantValue;
-            } else if (tokens[i].operatorString[0] == '/') {
-                value = tokens[i - 1].constantValue /
-                        tokens[i + 1].constantValue;
-            } else if (tokens[i].operatorString[0] == '+') {
-                value = tokens[i - 1].constantValue +
-                        tokens[i + 1].constantValue;
-            } else if (tokens[i].operatorString[0] == '-') {
-                value = tokens[i - 1].constantValue -
-                        tokens[i + 1].constantValue;
+            if (strlen(tokens[i].operatorString) == 1) {
+                if (tokens[i].operatorString[0] == '^') {
+                    value = pow(tokens[i - 1].constantValue,
+                                tokens[i + 1].constantValue);
+                } else if (tokens[i].operatorString[0] == '*') {
+                    value = tokens[i - 1].constantValue *
+                            tokens[i + 1].constantValue;
+                } else if (tokens[i].operatorString[0] == '/') {
+                    value = tokens[i - 1].constantValue /
+                            tokens[i + 1].constantValue;
+                } else if (tokens[i].operatorString[0] == '+') {
+                    value = tokens[i - 1].constantValue +
+                            tokens[i + 1].constantValue;
+                } else if (tokens[i].operatorString[0] == '-') {
+                    value = tokens[i - 1].constantValue -
+                            tokens[i + 1].constantValue;
+                } else {
+                    fail("Encountered invalid operator");
+                }
+                tokens[i - 1].constantValue = value;
+                *end = shiftLeft(tokens, i, i + 2, *end);
+                --i;
             } else {
-                fail("Encountered invalid operator");
+                if (compareStrings(tokens[i].operatorString,
+                                   "sin")) {
+                    value = sin(tokens[i + 1].constantValue);
+                }
+                free(tokens[i].operatorString);
+                tokens[i].tokenType = Constant;
+                tokens[i].constantValue = value;
+                if (i + 2 <= *end) {
+                    *end = shiftLeft(tokens, i + 1, i + 2, *end);
+                } else {
+                    --*end;
+                }
+                printTokens(tokens, start, *end);
             }
-            tokens[i - 1].constantValue = value;
-            *end = shiftLeft(tokens, i, i + 2, *end);
-            --i;
         }
     }
 }
@@ -226,6 +255,9 @@ static double evaluate(double x, Token *tokens, int start,
             strcpy(trigonometricFunctions[6], "arctan");
             strcpy(trigonometricFunctions[7], "arccot");
 
+            computeExpressions(trigonometricFunctions,
+                               trigonometricFunctionsLength,
+                               tokens, start, &end);
             computeExpressions(power, powerCount, tokens, start,
                                &end);
             computeExpressions(multiplicationDivision,
