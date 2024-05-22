@@ -157,7 +157,7 @@ static void computeExpressions(char **operators,
     }
 }
 
-static double evaluate(double x, Token *tokens, int start,
+static double evaluateConstantExpression(double x, Token *tokens, int start,
                        int end) {
     double result = -1;
     int i;
@@ -198,14 +198,14 @@ static double evaluate(double x, Token *tokens, int start,
         printf("\nRight parenthesis index: %d\n",
                rightParenthesisIndex);
         childResult =
-            evaluate(x, tokens, leftParenthesisIndex + 1,
+            evaluateConstantExpression(x, tokens, leftParenthesisIndex + 1,
                      rightParenthesisIndex - 1);
         free(tokens[leftParenthesisIndex].operatorString);
         tokens[leftParenthesisIndex].tokenType = Constant;
         tokens[leftParenthesisIndex].constantValue = childResult;
         end = shiftLeft(tokens, leftParenthesisIndex + 1,
                         rightParenthesisIndex + 1, end);
-        result = evaluate(x, tokens, start, end);
+        result = evaluateConstantExpression(x, tokens, start, end);
     } else {
         while (end > start) {
             int multiplicationDivisionCount = 2;
@@ -322,7 +322,7 @@ static void bisect(Token *tokens, int tokenCount,
     Token *tokensCopy =
         copyTokens(tokens, tokenCount, maximumOperatorLength);
 
-    result = evaluate(x, tokensCopy, 0, tokenCount - 1);
+    result = evaluateConstantExpression(x, tokensCopy, 0, tokenCount - 1);
     printf("\nBisect: result: %lf\n", result);
 
     for (i = 0; i < tokenCount; ++i) {
