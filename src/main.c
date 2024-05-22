@@ -140,39 +140,65 @@ static void computeExpressions(char **operators,
                 --i;
             } else {
                 if (compareStrings(tokens[i].operatorString,
-                                   "sin")) {
-                    value = sin(tokens[i + 1].constantValue);
-                } else if (compareStrings(tokens[i].operatorString,
-                                   "cos")) {
-                    value = cos(tokens[i + 1].constantValue);
-                } else if (compareStrings(tokens[i].operatorString,
-                                   "tan")) {
-                    value = tan(tokens[i + 1].constantValue);
-                } else if (compareStrings(tokens[i].operatorString,
-                                   "cot")) {
-                    value = 1 / tan(tokens[i + 1].constantValue);
-                } else if (compareStrings(tokens[i].operatorString,
-                                   "arcsin")) {
-                    value = asin(tokens[i + 1].constantValue);
-                } else if (compareStrings(tokens[i].operatorString,
-                                   "arccos")) {
-                    value = acos(tokens[i + 1].constantValue);
-                } else if (compareStrings(tokens[i].operatorString,
-                                   "arctan")) {
-                    value = atan(tokens[i + 1].constantValue);
-                } else if (compareStrings(tokens[i].operatorString,
-                                   "arccot")) {
-                    value = atan(1 / tokens[i + 1].constantValue);
-                }
-
-
-                free(tokens[i].operatorString);
-                tokens[i].tokenType = Constant;
-                tokens[i].constantValue = value;
-                if (i + 2 <= *end) {
-                    *end = shiftLeft(tokens, i + 1, i + 2, *end);
+                                   "log_")) {
+                    value = log(tokens[i + 2].constantValue) /
+                            log(tokens[i + 1].constantValue);
+                    free(tokens[i].operatorString);
+                    tokens[i].tokenType = Constant;
+                    tokens[i].constantValue = value;
+                    if (i + 3 <= *end) {
+                        *end = shiftLeft(tokens, i + 1, i + 3,
+                                         *end);
+                    } else {
+                        *end -= 2;
+                    }
                 } else {
-                    --*end;
+                    if (compareStrings(tokens[i].operatorString,
+                                       "sin")) {
+                        value = sin(tokens[i + 1].constantValue);
+                    } else if (compareStrings(
+                                   tokens[i].operatorString,
+                                   "cos")) {
+                        value = cos(tokens[i + 1].constantValue);
+                    } else if (compareStrings(
+                                   tokens[i].operatorString,
+                                   "tan")) {
+                        value = tan(tokens[i + 1].constantValue);
+                    } else if (compareStrings(
+                                   tokens[i].operatorString,
+                                   "cot")) {
+                        value =
+                            1 / tan(tokens[i + 1].constantValue);
+                    } else if (compareStrings(
+                                   tokens[i].operatorString,
+                                   "arcsin")) {
+                        value =
+                            asin(tokens[i + 1].constantValue);
+                    } else if (compareStrings(
+                                   tokens[i].operatorString,
+                                   "arccos")) {
+                        value =
+                            acos(tokens[i + 1].constantValue);
+                    } else if (compareStrings(
+                                   tokens[i].operatorString,
+                                   "arctan")) {
+                        value =
+                            atan(tokens[i + 1].constantValue);
+                    } else if (compareStrings(
+                                   tokens[i].operatorString,
+                                   "arccot")) {
+                        value = atan(
+                            1 / tokens[i + 1].constantValue);
+                    }
+                    free(tokens[i].operatorString);
+                    tokens[i].tokenType = Constant;
+                    tokens[i].constantValue = value;
+                    if (i + 2 <= *end) {
+                        *end = shiftLeft(tokens, i + 1, i + 2,
+                                         *end);
+                    } else {
+                        --*end;
+                    }
                 }
             }
         }
@@ -239,6 +265,10 @@ static double evaluateConstantExpression(Token *tokens,
             char **trigonometricFunctions =
                 malloc((size_t)trigonometricFunctionsLength *
                        sizeof(char *));
+            int logarithmicFunctionCount = 1;
+            char **logarithmicFunction =
+                malloc((size_t)logarithmicFunctionCount *
+                       sizeof(char *));
 
             for (i = 0; i < multiplicationDivisionCount; ++i) {
                 multiplicationDivision[i] =
@@ -271,6 +301,12 @@ static double evaluateConstantExpression(Token *tokens,
             strcpy(trigonometricFunctions[6], "arctan");
             strcpy(trigonometricFunctions[7], "arccot");
 
+            logarithmicFunction[0] = calloc(10, sizeof(char *));
+            strcpy(logarithmicFunction[0], "log_");
+
+            computeExpressions(logarithmicFunction,
+                               logarithmicFunctionCount, tokens,
+                               start, &end);
             computeExpressions(trigonometricFunctions,
                                trigonometricFunctionsLength,
                                tokens, start, &end);
@@ -295,10 +331,14 @@ static double evaluateConstantExpression(Token *tokens,
             for (i = 0; i < trigonometricFunctionsLength; ++i) {
                 free(trigonometricFunctions[i]);
             }
+            for (i = 0; i < logarithmicFunctionCount; ++i) {
+                free(logarithmicFunction[i]);
+            }
             free(multiplicationDivision);
             free(additionSubtraction);
             free(power);
             free(trigonometricFunctions);
+            free(logarithmicFunction);
         }
         result = tokens[start].constantValue;
     }
@@ -362,7 +402,6 @@ static void bisect(Token *tokens, int tokenCount,
         copyTokens(tokens, tokenCount, maximumOperatorLength);
 
     fa = evaluate(a, tokensCopyA, 0, tokenCount - 1);
-    printf("\nfa: %lf\n", fa);
     fb = evaluate(b, tokensCopyB, 0, tokenCount - 1);
 
     if (fa * fb >= 0) {
@@ -924,6 +963,22 @@ int main() {
                                    "cot");
 
                             i += 2;
+                        } else if (i + 3 < lineLength &&
+                                   line[i] == 'l' &&
+                                   line[i + 1] == 'o' &&
+                                   line[i + 2] == 'g' &&
+                                   line[i + 3] == '_') {
+                            tokens[tokenCount].tokenType =
+                                Operator;
+                            tokens[tokenCount].operatorString =
+                                calloc((size_t)
+                                           maximumOperatorLength,
+                                       sizeof(char));
+                            strcpy(tokens[tokenCount]
+                                       .operatorString,
+                                   "log_");
+
+                            i += 3;
                         } else if (i + 5 < lineLength &&
                                    line[i] == 'a' &&
                                    line[i + 1] == 'r' &&
