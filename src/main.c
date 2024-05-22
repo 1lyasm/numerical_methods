@@ -624,11 +624,15 @@ static void computeInverseMatrix(void) {
         }
     }
 
-    augmentedMatrix = (double **)malloc((size_t)N * sizeof(double *));
+    augmentedMatrix =
+        (double **)malloc((size_t)N * sizeof(double *));
     for (int i = 0; i < N; i++) {
-        augmentedMatrix[i] = (double *)malloc((size_t)(2 * N) * sizeof(double));
-        memset(augmentedMatrix[i], 0, (size_t)(2 * N) * sizeof(double));
-        memcpy(augmentedMatrix[i], matrix[i], (size_t)N * sizeof(double));
+        augmentedMatrix[i] =
+            (double *)malloc((size_t)(2 * N) * sizeof(double));
+        memset(augmentedMatrix[i], 0,
+               (size_t)(2 * N) * sizeof(double));
+        memcpy(augmentedMatrix[i], matrix[i],
+               (size_t)N * sizeof(double));
         augmentedMatrix[i][N + i] = 1.0;
     }
 
@@ -636,14 +640,16 @@ static void computeInverseMatrix(void) {
         int pivotRow = i;
         double pivot;
         for (int j = i + 1; j < N; j++) {
-            if (fabs(augmentedMatrix[j][i]) > fabs(augmentedMatrix[pivotRow][i])) {
+            if (fabs(augmentedMatrix[j][i]) >
+                fabs(augmentedMatrix[pivotRow][i])) {
                 pivotRow = j;
             }
         }
         if (pivotRow != i) {
             for (int k = 0; k < 2 * N; k++) {
                 double temp = augmentedMatrix[i][k];
-                augmentedMatrix[i][k] = augmentedMatrix[pivotRow][k];
+                augmentedMatrix[i][k] =
+                    augmentedMatrix[pivotRow][k];
                 augmentedMatrix[pivotRow][k] = temp;
             }
         }
@@ -655,7 +661,8 @@ static void computeInverseMatrix(void) {
             if (j != i) {
                 double factor = augmentedMatrix[j][i];
                 for (int k = 0; k < 2 * N; k++) {
-                    augmentedMatrix[j][k] -= factor * augmentedMatrix[i][k];
+                    augmentedMatrix[j][k] -=
+                        factor * augmentedMatrix[i][k];
                 }
             }
         }
@@ -677,7 +684,6 @@ static void computeInverseMatrix(void) {
     free(matrix);
     free(augmentedMatrix);
 }
-
 
 int main() {
     int input;
