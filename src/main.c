@@ -142,7 +142,30 @@ static void computeExpressions(char **operators,
                 if (compareStrings(tokens[i].operatorString,
                                    "sin")) {
                     value = sin(tokens[i + 1].constantValue);
+                } else if (compareStrings(tokens[i].operatorString,
+                                   "cos")) {
+                    value = cos(tokens[i + 1].constantValue);
+                } else if (compareStrings(tokens[i].operatorString,
+                                   "tan")) {
+                    value = tan(tokens[i + 1].constantValue);
+                } else if (compareStrings(tokens[i].operatorString,
+                                   "cot")) {
+                    value = 1 / tan(tokens[i + 1].constantValue);
+                } else if (compareStrings(tokens[i].operatorString,
+                                   "arcsin")) {
+                    value = asin(tokens[i + 1].constantValue);
+                } else if (compareStrings(tokens[i].operatorString,
+                                   "arccos")) {
+                    value = acos(tokens[i + 1].constantValue);
+                } else if (compareStrings(tokens[i].operatorString,
+                                   "arctan")) {
+                    value = atan(tokens[i + 1].constantValue);
+                } else if (compareStrings(tokens[i].operatorString,
+                                   "arccot")) {
+                    value = atan(1 / tokens[i + 1].constantValue);
                 }
+
+
                 free(tokens[i].operatorString);
                 tokens[i].tokenType = Constant;
                 tokens[i].constantValue = value;
@@ -339,6 +362,7 @@ static void bisect(Token *tokens, int tokenCount,
         copyTokens(tokens, tokenCount, maximumOperatorLength);
 
     fa = evaluate(a, tokensCopyA, 0, tokenCount - 1);
+    printf("\nfa: %lf\n", fa);
     fb = evaluate(b, tokensCopyB, 0, tokenCount - 1);
 
     if (fa * fb >= 0) {
