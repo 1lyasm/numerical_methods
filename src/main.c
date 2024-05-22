@@ -151,7 +151,6 @@ static void computeExpressions(char **operators,
                 } else {
                     --*end;
                 }
-                printTokens(tokens, start, *end);
             }
         }
     }
@@ -165,8 +164,6 @@ static double evaluateConstantExpression(Token *tokens,
     int rightParenthesisIndex = -1;
     int leftParenthesisCount = 1;
     int rightParenthesisCount = 0;
-
-    printTokens(tokens, start, end);
 
     for (i = start; i <= end && leftParenthesisIndex < 0; ++i) {
         if (tokens[i].tokenType == Operator &&
@@ -193,10 +190,6 @@ static double evaluateConstantExpression(Token *tokens,
     if (leftParenthesisIndex >= 0 &&
         rightParenthesisIndex >= 0) {
         double childResult;
-        printf("\nLeft parenthesis index: %d\n",
-               leftParenthesisIndex);
-        printf("\nRight parenthesis index: %d\n",
-               rightParenthesisIndex);
         childResult = evaluateConstantExpression(
             tokens, leftParenthesisIndex + 1,
             rightParenthesisIndex - 1);
@@ -285,8 +278,6 @@ static double evaluateConstantExpression(Token *tokens,
             free(trigonometricFunctions);
         }
         result = tokens[start].constantValue;
-
-        printf("\nChild result: %lf\n", result);
     }
 
     return result;
@@ -328,24 +319,80 @@ static double evaluate(double x, Token *tokens, int start,
     return evaluateConstantExpression(tokens, start, end);
 }
 
-static void bisect(Token *tokens, int tokenCount,
-                   int maximumOperatorLength) {
-    double x = 1;
-    double result;
-    int i;
-    Token *tokensCopy =
-        copyTokens(tokens, tokenCount, maximumOperatorLength);
+static void bisect(Token *tokens, int tokenCount, int maximumOperatorLength) {
+    double a, b, mid, tol = 1e-6;
+    int maxIterations = 1000;
+    int iteration = 0;
+    double fa, fb, fmid;
+    Token *tokensCopyA, *tokensCopyB;
 
-    result = evaluate(x, tokensCopy, 0, tokenCount - 1);
-    printf("\nBisect: result: %lf\n", result);
+    printf("Enter the interval [a, b]: ");
+    scanf("%lf %lf", &a, &b);
 
-    for (i = 0; i < tokenCount; ++i) {
-        if (tokensCopy[i].tokenType == Operator) {
-            free(tokensCopy[i].operatorString);
+    tokensCopyA = copyTokens(tokens, tokenCount, maximumOperatorLength);
+    tokensCopyB = copyTokens(tokens, tokenCount, maximumOperatorLength);
+
+    fa = evaluate(a, tokensCopyA, 0, tokenCount - 1);
+    fb = evaluate(b, tokensCopyB, 0, tokenCount - 1);
+
+    if (fa * fb >= 0) {
+        printf("Function has the same sign at the endpoints of the interval.\n");
+        for (int i = 0; i < tokenCount; ++i) {
+            if (tokensCopyA[i].tokenType == Operator) free(tokensCopyA[i].operatorString);
+            if (tokensCopyB[i].tokenType == Operator) free(tokensCopyB[i].operatorString);
+        }
+        free(tokensCopyA);
+        free(tokensCopyB);
+        return;
+    }
+
+    do {
+        Token *tokensCopyMid;
+        mid = (a + b) / 2;
+        tokensCopyMid = copyTokens(tokens, tokenCount, maximumOperatorLength);
+        fmid = evaluate(mid, tokensCopyMid, 0, tokenCount - 1);
+
+        if (fmid == 0.0 || (b - a) / 2 < tol) {
+            printf("Root found: %lf\n", mid);
+            for (int i = 0; i < tokenCount; ++i) {
+                if (tokensCopyMid[i].tokenType == Operator) free(tokensCopyMid[i].operatorString);
+            }
+            free(tokensCopyMid);
+            break;
+        }
+
+        if (fa * fmid < 0) {
+            b = mid;
+            fb = fmid;
+        } else {
+            a = mid;
+            fa = fmid;
+        }
+
+        for (int i = 0; i < tokenCount; ++i) {
+            if (tokensCopyMid[i].tokenType == Operator) free(tokensCopyMid[i].operatorString);
+        }
+        free(tokensCopyMid);
+
+        iteration++;
+    } while (iteration < maxIterations);
+
+    if (iteration == maxIterations) {
+        printf("Maximum number of iterations reached. Approximate root: %lf\n", mid);
+    }
+
+    for (int i = 0; i < tokenCount; ++i) {
+        if (tokensCopyA[i].tokenType == Operator) {
+            free(tokensCopyA[i].operatorString);
+        }
+        if (tokensCopyB[i].tokenType == Operator) {
+            free(tokensCopyB[i].operatorString);
         }
     }
-    free(tokensCopy);
+    free(tokensCopyA);
+    free(tokensCopyB);
 }
+
 
 int main() {
     int input;
