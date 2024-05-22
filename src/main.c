@@ -411,6 +411,96 @@ static void bisect(Token *tokens, int tokenCount,
     free(tokensCopyB);
 }
 
+static void solveWithRegulaFalsi(Token *tokens, int tokenCount,
+                                 int maximumOperatorLength) {
+    double a, b, c, fa, fb, fc, tol = 1e-6;
+    int maxIterations = 1000;
+    int iteration = 0;
+    Token *tokensCopyA, *tokensCopyB;
+
+    printf("Enter the interval [a, b]: ");
+    scanf("%lf %lf", &a, &b);
+    printf("Regula Falsi method starting with interval [%lf, "
+           "%lf]\n",
+           a, b);
+
+    tokensCopyA =
+        copyTokens(tokens, tokenCount, maximumOperatorLength);
+    tokensCopyB =
+        copyTokens(tokens, tokenCount, maximumOperatorLength);
+
+    fa = evaluate(a, tokensCopyA, 0, tokenCount - 1);
+    fb = evaluate(b, tokensCopyB, 0, tokenCount - 1);
+
+    if (fa * fb >= 0) {
+        printf("Function has the same sign at the endpoints of "
+               "the interval.\n");
+        for (int i = 0; i < tokenCount; ++i) {
+            if (tokensCopyA[i].tokenType == Operator)
+                free(tokensCopyA[i].operatorString);
+            if (tokensCopyB[i].tokenType == Operator)
+                free(tokensCopyB[i].operatorString);
+        }
+        free(tokensCopyA);
+        free(tokensCopyB);
+        return;
+    }
+
+    do {
+        Token *tokensCopyC;
+        c = (a * fb - b * fa) / (fb - fa);
+        tokensCopyC = copyTokens(tokens, tokenCount,
+                                 maximumOperatorLength);
+        fc = evaluate(c, tokensCopyC, 0, tokenCount - 1);
+
+        printf("Iteration %d: a = %lf, b = %lf, c = %lf, fa = "
+               "%lf, fb = %lf, fc = %lf\n",
+               iteration, a, b, c, fa, fb, fc);
+
+        if (fc == 0.0 || fabs(fc) < tol) {
+            printf("Root found: %lf\n", c);
+            for (int i = 0; i < tokenCount; ++i) {
+                if (tokensCopyC[i].tokenType == Operator)
+                    free(tokensCopyC[i].operatorString);
+            }
+            free(tokensCopyC);
+            break;
+        }
+
+        if (fa * fc < 0) {
+            b = c;
+            fb = fc;
+        } else {
+            a = c;
+            fa = fc;
+        }
+
+        for (int i = 0; i < tokenCount; ++i) {
+            if (tokensCopyC[i].tokenType == Operator)
+                free(tokensCopyC[i].operatorString);
+        }
+        free(tokensCopyC);
+
+        iteration++;
+    } while (iteration < maxIterations);
+
+    if (iteration == maxIterations) {
+        printf("Maximum number of iterations reached. "
+               "Approximate root: %lf\n",
+               c);
+    }
+
+    for (int i = 0; i < tokenCount; ++i) {
+        if (tokensCopyA[i].tokenType == Operator) {
+            free(tokensCopyA[i].operatorString);
+        }
+        if (tokensCopyB[i].tokenType == Operator) {
+            free(tokensCopyB[i].operatorString);
+        }
+    }
+    free(tokensCopyA);
+    free(tokensCopyB);
+}
 
 int main() {
     int input;
@@ -589,6 +679,9 @@ int main() {
                 if (input == 1) {
                     bisect(tokens, tokenCount,
                            maximumOperatorLength);
+                } else if (input == 2) {
+                    solveWithRegulaFalsi(tokens, tokenCount,
+                                         maximumOperatorLength);
                 }
 
                 for (i = 0; i < tokenCount; ++i) {
