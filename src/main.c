@@ -685,9 +685,91 @@ static void computeInverseMatrix(void) {
     free(augmentedMatrix);
 }
 
+// Function to swap rows
+static void swap(double **matrix, int row1, int row2, int m) {
+    for (int i = 0; i < m; i++) {
+        double temp = matrix[row1][i];
+        matrix[row1][i] = matrix[row2][i];
+        matrix[row2][i] = temp;
+    }
+}
 
 static void gaussianEliminate() {
+    int n, m, h, k;
+    double **matrix;
 
+    printf("Enter the number of rows and columns (n m): ");
+    scanf("%d %d", &n, &m);
+
+    matrix = (double **)malloc((size_t)n * sizeof(double *));
+    for (int i = 0; i < n; ++i) {
+        matrix[i] = (double *)malloc((size_t)m * sizeof(double));
+    }
+
+    for (int i = 0; i < n; ++i) {
+        printf("Row %d: ", i);
+        for (int j = 0; j < m; ++j) {
+            scanf("%lf", &matrix[i][j]);
+        }
+    }
+
+    h = 0;
+    k = 0;
+
+    while (h < n && k < m) {
+        int i_max = h;
+        for (int i = h + 1; i < n; i++) {
+            if (fabs(matrix[i][k]) > fabs(matrix[i_max][k])) {
+                i_max = i;
+            }
+        }
+        if (fabs(matrix[i_max][k]) < 1e-6) {
+            k++;
+        } else {
+            if (h != i_max) {
+                printf("Swapping row %d with row %d\n", h,
+                       i_max);
+                swap(matrix, h, i_max, m);
+            }
+
+            for (int i = h + 1; i < n; i++) {
+                double f = matrix[i][k] / matrix[h][k];
+                printf("Eliminating row %d using row %d with "
+                       "factor %lf\n",
+                       i, h, f);
+
+                matrix[i][k] = 0;
+
+                for (int j = k + 1; j < m; j++) {
+                    matrix[i][j] -= matrix[h][j] * f;
+                }
+            }
+
+            printf("Matrix after processing column %d:\n", k);
+            for (int i = 0; i < n; ++i) {
+                for (int j = 0; j < m; ++j) {
+                    printf("%lf ", matrix[i][j]);
+                }
+                printf("\n");
+            }
+
+            h++;
+            k++;
+        }
+    }
+
+    printf("Upper triangular matrix:\n");
+    for (int i = 0; i < n; ++i) {
+        for (int j = 0; j < m; ++j) {
+            printf("%lf ", matrix[i][j]);
+        }
+        printf("\n");
+    }
+
+    for (int i = 0; i < n; ++i) {
+        free(matrix[i]);
+    }
+    free(matrix);
 }
 
 int main() {
