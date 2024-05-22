@@ -501,6 +501,109 @@ static void solveWithRegulaFalsi(Token *tokens, int tokenCount,
     free(tokensCopyA);
     free(tokensCopyB);
 }
+static double
+computeFiniteDifference(double x, double h, Token *tokens,
+                        int tokenCount,
+                        int maximumOperatorLength) {
+    double fx_plus_h, fx_minus_h;
+    Token *tokensCopyPlusH, *tokensCopyMinusH;
+    double derivative;
+    int i;
+
+    tokensCopyPlusH =
+        copyTokens(tokens, tokenCount, maximumOperatorLength);
+    fx_plus_h =
+        evaluate(x + h, tokensCopyPlusH, 0, tokenCount - 1);
+
+    tokensCopyMinusH =
+        copyTokens(tokens, tokenCount, maximumOperatorLength);
+    fx_minus_h =
+        evaluate(x - h, tokensCopyMinusH, 0, tokenCount - 1);
+
+    derivative = (fx_plus_h - fx_minus_h) / (2 * h);
+
+    for (i = 0; i < tokenCount; ++i) {
+        if (tokensCopyPlusH[i].tokenType == Operator) {
+            free(tokensCopyPlusH[i].operatorString);
+        }
+        if (tokensCopyMinusH[i].tokenType == Operator) {
+            free(tokensCopyMinusH[i].operatorString);
+        }
+    }
+
+    free(tokensCopyPlusH);
+    free(tokensCopyMinusH);
+
+    return derivative;
+}
+
+static void solveWithNewtonRaphson(Token *tokens, int tokenCount,
+                                   int maximumOperatorLength) {
+    double x0, x1, f0, f1, tol = 1e-6;
+    int maxIterations = 1000;
+    int iteration = 0;
+    int i;
+    Token *tokensCopy =
+        copyTokens(tokens, tokenCount, maximumOperatorLength);
+
+    printf("Enter the initial guess x0: ");
+    scanf("%lf", &x0);
+    printf("Newton-Raphson method starting with initial guess "
+           "x0 = %lf\n",
+           x0);
+
+    f0 = evaluate(x0, tokensCopy, 0, tokenCount - 1);
+
+    for (i = 0; i < tokenCount; ++i) {
+        if (tokensCopy[i].tokenType == Operator) {
+            free(tokensCopy[i].operatorString);
+        }
+    }
+
+    free(tokensCopy);
+
+    if (fabs(f0) < tol) {
+        printf("Root found: %lf\n", x0);
+        return;
+    }
+
+    do {
+        double fPrime = computeFiniteDifference(
+            x0, 1e-6, tokens, tokenCount, maximumOperatorLength);
+
+        x1 = x0 - f0 / fPrime;
+        tokensCopy = copyTokens(tokens, tokenCount,
+                                maximumOperatorLength);
+        f1 = evaluate(x1, tokensCopy, 0, tokenCount - 1);
+
+        for (i = 0; i < tokenCount; ++i) {
+            if (tokensCopy[i].tokenType == Operator) {
+                free(tokensCopy[i].operatorString);
+            }
+        }
+
+        free(tokensCopy);
+
+        printf("Iteration %d: x0 = %lf, x1 = %lf, f(x1) = "
+               "%lf\n",
+               iteration, x0, x1, f1);
+
+        if (fabs(f1) < tol) {
+            printf("Root found: %lf\n", x1);
+            return;
+        }
+
+        x0 = x1;
+        f0 = f1;
+
+        iteration++;
+    } while (iteration < maxIterations);
+
+    printf("Maximum number of iterations reached. "
+           "Approximate "
+           "root: %lf\n",
+           x1);
+}
 
 int main() {
     int input;
@@ -682,6 +785,10 @@ int main() {
                 } else if (input == 2) {
                     solveWithRegulaFalsi(tokens, tokenCount,
                                          maximumOperatorLength);
+                } else if (input == 3) {
+                    solveWithNewtonRaphson(
+                        tokens, tokenCount,
+                        maximumOperatorLength);
                 }
 
                 for (i = 0; i < tokenCount; ++i) {
