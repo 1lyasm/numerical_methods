@@ -190,6 +190,10 @@ static double evaluate(double x, Token *tokens, int start,
             int powerCount = 1;
             char **power =
                 malloc((size_t)powerCount * sizeof(char *));
+            int trigonometricFunctionsLength = 10;
+            char **trigonometricFunctions =
+                malloc((size_t)trigonometricFunctionsLength *
+                       sizeof(char *));
 
             for (i = 0; i < multiplicationDivisionCount; ++i) {
                 multiplicationDivision[i] =
@@ -209,6 +213,19 @@ static double evaluate(double x, Token *tokens, int start,
             }
             power[0][0] = '^';
 
+            for (i = 0; i < trigonometricFunctionsLength; ++i) {
+                trigonometricFunctions[i] =
+                    calloc(10, sizeof(char));
+            }
+            strcpy(trigonometricFunctions[0], "sin");
+            strcpy(trigonometricFunctions[1], "cos");
+            strcpy(trigonometricFunctions[2], "tan");
+            strcpy(trigonometricFunctions[3], "cot");
+            strcpy(trigonometricFunctions[4], "arcsin");
+            strcpy(trigonometricFunctions[5], "arccos");
+            strcpy(trigonometricFunctions[6], "arctan");
+            strcpy(trigonometricFunctions[7], "arccot");
+
             computeExpressions(power, powerCount, tokens, start,
                                &end);
             computeExpressions(multiplicationDivision,
@@ -227,9 +244,13 @@ static double evaluate(double x, Token *tokens, int start,
             for (i = 0; i < powerCount; ++i) {
                 free(power[i]);
             }
+            for (i = 0; i < trigonometricFunctionsLength; ++i) {
+                free(trigonometricFunctions[i]);
+            }
             free(multiplicationDivision);
             free(additionSubtraction);
             free(power);
+            free(trigonometricFunctions);
         }
         result = tokens[start].constantValue;
 
