@@ -319,7 +319,8 @@ static double evaluate(double x, Token *tokens, int start,
     return evaluateConstantExpression(tokens, start, end);
 }
 
-static void bisect(Token *tokens, int tokenCount, int maximumOperatorLength) {
+static void bisect(Token *tokens, int tokenCount,
+                   int maximumOperatorLength) {
     double a, b, mid, tol = 1e-6;
     int maxIterations = 1000;
     int iteration = 0;
@@ -328,18 +329,26 @@ static void bisect(Token *tokens, int tokenCount, int maximumOperatorLength) {
 
     printf("Enter the interval [a, b]: ");
     scanf("%lf %lf", &a, &b);
+    printf(
+        "Bisection method starting with interval [%lf, %lf]\n",
+        a, b);
 
-    tokensCopyA = copyTokens(tokens, tokenCount, maximumOperatorLength);
-    tokensCopyB = copyTokens(tokens, tokenCount, maximumOperatorLength);
+    tokensCopyA =
+        copyTokens(tokens, tokenCount, maximumOperatorLength);
+    tokensCopyB =
+        copyTokens(tokens, tokenCount, maximumOperatorLength);
 
     fa = evaluate(a, tokensCopyA, 0, tokenCount - 1);
     fb = evaluate(b, tokensCopyB, 0, tokenCount - 1);
 
     if (fa * fb >= 0) {
-        printf("Function has the same sign at the endpoints of the interval.\n");
+        printf("Function has the same sign at the endpoints of "
+               "the interval.\n");
         for (int i = 0; i < tokenCount; ++i) {
-            if (tokensCopyA[i].tokenType == Operator) free(tokensCopyA[i].operatorString);
-            if (tokensCopyB[i].tokenType == Operator) free(tokensCopyB[i].operatorString);
+            if (tokensCopyA[i].tokenType == Operator)
+                free(tokensCopyA[i].operatorString);
+            if (tokensCopyB[i].tokenType == Operator)
+                free(tokensCopyB[i].operatorString);
         }
         free(tokensCopyA);
         free(tokensCopyB);
@@ -349,13 +358,19 @@ static void bisect(Token *tokens, int tokenCount, int maximumOperatorLength) {
     do {
         Token *tokensCopyMid;
         mid = (a + b) / 2;
-        tokensCopyMid = copyTokens(tokens, tokenCount, maximumOperatorLength);
+        tokensCopyMid = copyTokens(tokens, tokenCount,
+                                   maximumOperatorLength);
         fmid = evaluate(mid, tokensCopyMid, 0, tokenCount - 1);
+
+        printf("Iteration %d: a = %lf, b = %lf, mid = %lf, fa = "
+               "%lf, fb = %lf, fmid = %lf\n",
+               iteration, a, b, mid, fa, fb, fmid);
 
         if (fmid == 0.0 || (b - a) / 2 < tol) {
             printf("Root found: %lf\n", mid);
             for (int i = 0; i < tokenCount; ++i) {
-                if (tokensCopyMid[i].tokenType == Operator) free(tokensCopyMid[i].operatorString);
+                if (tokensCopyMid[i].tokenType == Operator)
+                    free(tokensCopyMid[i].operatorString);
             }
             free(tokensCopyMid);
             break;
@@ -370,7 +385,8 @@ static void bisect(Token *tokens, int tokenCount, int maximumOperatorLength) {
         }
 
         for (int i = 0; i < tokenCount; ++i) {
-            if (tokensCopyMid[i].tokenType == Operator) free(tokensCopyMid[i].operatorString);
+            if (tokensCopyMid[i].tokenType == Operator)
+                free(tokensCopyMid[i].operatorString);
         }
         free(tokensCopyMid);
 
@@ -378,7 +394,9 @@ static void bisect(Token *tokens, int tokenCount, int maximumOperatorLength) {
     } while (iteration < maxIterations);
 
     if (iteration == maxIterations) {
-        printf("Maximum number of iterations reached. Approximate root: %lf\n", mid);
+        printf("Maximum number of iterations reached. "
+               "Approximate root: %lf\n",
+               mid);
     }
 
     for (int i = 0; i < tokenCount; ++i) {
