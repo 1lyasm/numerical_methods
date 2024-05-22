@@ -685,6 +685,11 @@ static void computeInverseMatrix(void) {
     free(augmentedMatrix);
 }
 
+
+static void gaussianEliminate() {
+
+}
+
 int main() {
     int input;
     int maximumTokenCount = 64;
@@ -705,6 +710,8 @@ int main() {
         } else {
             if (input == 4) {
                 computeInverseMatrix();
+            } else if (input == 5) {
+                gaussianEliminate();
             } else {
                 printf("\nEnter the function: ");
                 // Read line twice to skip extra line
