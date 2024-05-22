@@ -605,6 +605,80 @@ static void solveWithNewtonRaphson(Token *tokens, int tokenCount,
            x1);
 }
 
+static void computeInverseMatrix(void) {
+    int N;
+    double **matrix;
+    double **augmentedMatrix;
+    printf("Enter the size of the square matrix: ");
+    scanf("%d", &N);
+
+    matrix = (double **)malloc((size_t)N * sizeof(double *));
+    for (int i = 0; i < N; i++) {
+        matrix[i] = (double *)malloc((size_t)N * sizeof(double));
+    }
+
+    for (int i = 0; i < N; i++) {
+        printf("Enter row %d: ", i);
+        for (int j = 0; j < N; j++) {
+            scanf("%lf", &matrix[i][j]);
+        }
+    }
+
+    augmentedMatrix = (double **)malloc((size_t)N * sizeof(double *));
+    for (int i = 0; i < N; i++) {
+        augmentedMatrix[i] = (double *)malloc((size_t)(2 * N) * sizeof(double));
+        memset(augmentedMatrix[i], 0, (size_t)(2 * N) * sizeof(double));
+        memcpy(augmentedMatrix[i], matrix[i], (size_t)N * sizeof(double));
+        augmentedMatrix[i][N + i] = 1.0;
+    }
+
+    for (int i = 0; i < N; i++) {
+        int pivotRow = i;
+        double pivot;
+        for (int j = i + 1; j < N; j++) {
+            if (fabs(augmentedMatrix[j][i]) > fabs(augmentedMatrix[pivotRow][i])) {
+                pivotRow = j;
+            }
+        }
+        if (pivotRow != i) {
+            for (int k = 0; k < 2 * N; k++) {
+                double temp = augmentedMatrix[i][k];
+                augmentedMatrix[i][k] = augmentedMatrix[pivotRow][k];
+                augmentedMatrix[pivotRow][k] = temp;
+            }
+        }
+        pivot = augmentedMatrix[i][i];
+        for (int j = 0; j < 2 * N; j++) {
+            augmentedMatrix[i][j] /= pivot;
+        }
+        for (int j = 0; j < N; j++) {
+            if (j != i) {
+                double factor = augmentedMatrix[j][i];
+                for (int k = 0; k < 2 * N; k++) {
+                    augmentedMatrix[j][k] -= factor * augmentedMatrix[i][k];
+                }
+            }
+        }
+    }
+
+    printf("Inverse of the matrix:\n[\n");
+    for (int i = 0; i < N; i++) {
+        for (int j = N; j < 2 * N; j++) {
+            printf("  %.2f\t", augmentedMatrix[i][j]);
+        }
+        printf("\n");
+    }
+    printf("]\n");
+
+    for (int i = 0; i < N; i++) {
+        free(matrix[i]);
+        free(augmentedMatrix[i]);
+    }
+    free(matrix);
+    free(augmentedMatrix);
+}
+
+
 int main() {
     int input;
     int maximumTokenCount = 64;
@@ -623,177 +697,210 @@ int main() {
         if (input == 11) {
             wantsToExit = 1;
         } else {
-            printf("\nEnter the function: ");
-            // Read line twice to skip extra line
-            getline(&line, &lineSize, stdin);
-            if (getline(&line, &lineSize, stdin) == -1) {
-                fail("getline failed");
+            if (input == 4) {
+                computeInverseMatrix();
             } else {
-                int lineLength = (int)strlen(line) - 1;
+                printf("\nEnter the function: ");
+                // Read line twice to skip extra line
+                getline(&line, &lineSize, stdin);
+                if (getline(&line, &lineSize, stdin) == -1) {
+                    fail("getline failed");
+                } else {
+                    int lineLength = (int)strlen(line) - 1;
 
-                tokenCount = 0;
-                line[lineLength] = 0;
-                for (i = 0; i < lineLength; ++i) {
-                    int consumedToken = 1;
+                    tokenCount = 0;
+                    line[lineLength] = 0;
+                    for (i = 0; i < lineLength; ++i) {
+                        int consumedToken = 1;
 
-                    if (line[i] >= '0' && line[i] <= '9') {
-                        double value;
-                        int readCount;
+                        if (line[i] >= '0' && line[i] <= '9') {
+                            double value;
+                            int readCount;
 
-                        sscanf(line + i, "%lf%n", &value,
-                               &readCount);
-                        i += readCount - 1;
+                            sscanf(line + i, "%lf%n", &value,
+                                   &readCount);
+                            i += readCount - 1;
 
-                        tokens[tokenCount].tokenType = Constant;
-                        tokens[tokenCount].constantValue = value;
-                    } else if (line[i] == '^' ||
-                               line[i] == '+' ||
-                               line[i] == '-' ||
-                               line[i] == '*' ||
-                               line[i] == '/' ||
-                               line[i] == '(' ||
-                               line[i] == ')' ||
-                               line[i] == 'x') {
-                        tokens[tokenCount].tokenType = Operator;
-                        tokens[tokenCount].operatorString =
-                            calloc((size_t)maximumOperatorLength,
-                                   sizeof(char));
-                        tokens[tokenCount].operatorString[0] =
-                            line[i];
-                    } else if (line[i] == 'e') {
-                        tokens[tokenCount].tokenType = Constant;
-                        tokens[tokenCount].constantValue =
-                            CONSTANT_E;
-                    } else if (i + 2 < lineLength &&
-                               line[i] == 's' &&
-                               line[i + 1] == 'i' &&
-                               line[i + 2] == 'n') {
-                        tokens[tokenCount].tokenType = Operator;
-                        tokens[tokenCount].operatorString =
-                            calloc((size_t)maximumOperatorLength,
-                                   sizeof(char));
-                        strcpy(tokens[tokenCount].operatorString,
-                               "sin");
-                        i += 2;
-                    } else if (i + 2 < lineLength &&
-                               line[i] == 'c' &&
-                               line[i + 1] == 'o' &&
-                               line[i + 2] == 's') {
-                        tokens[tokenCount].tokenType = Operator;
-                        tokens[tokenCount].operatorString =
-                            calloc((size_t)maximumOperatorLength,
-                                   sizeof(char));
-                        strcpy(tokens[tokenCount].operatorString,
-                               "cos");
+                            tokens[tokenCount].tokenType =
+                                Constant;
+                            tokens[tokenCount].constantValue =
+                                value;
+                        } else if (line[i] == '^' ||
+                                   line[i] == '+' ||
+                                   line[i] == '-' ||
+                                   line[i] == '*' ||
+                                   line[i] == '/' ||
+                                   line[i] == '(' ||
+                                   line[i] == ')' ||
+                                   line[i] == 'x') {
+                            tokens[tokenCount].tokenType =
+                                Operator;
+                            tokens[tokenCount].operatorString =
+                                calloc((size_t)
+                                           maximumOperatorLength,
+                                       sizeof(char));
+                            tokens[tokenCount]
+                                .operatorString[0] = line[i];
+                        } else if (line[i] == 'e') {
+                            tokens[tokenCount].tokenType =
+                                Constant;
+                            tokens[tokenCount].constantValue =
+                                CONSTANT_E;
+                        } else if (i + 2 < lineLength &&
+                                   line[i] == 's' &&
+                                   line[i + 1] == 'i' &&
+                                   line[i + 2] == 'n') {
+                            tokens[tokenCount].tokenType =
+                                Operator;
+                            tokens[tokenCount].operatorString =
+                                calloc((size_t)
+                                           maximumOperatorLength,
+                                       sizeof(char));
+                            strcpy(tokens[tokenCount]
+                                       .operatorString,
+                                   "sin");
+                            i += 2;
+                        } else if (i + 2 < lineLength &&
+                                   line[i] == 'c' &&
+                                   line[i + 1] == 'o' &&
+                                   line[i + 2] == 's') {
+                            tokens[tokenCount].tokenType =
+                                Operator;
+                            tokens[tokenCount].operatorString =
+                                calloc((size_t)
+                                           maximumOperatorLength,
+                                       sizeof(char));
+                            strcpy(tokens[tokenCount]
+                                       .operatorString,
+                                   "cos");
 
-                        i += 2;
-                    } else if (i + 2 < lineLength &&
-                               line[i] == 't' &&
-                               line[i + 1] == 'a' &&
-                               line[i + 2] == 'n') {
-                        tokens[tokenCount].tokenType = Operator;
-                        tokens[tokenCount].operatorString =
-                            calloc((size_t)maximumOperatorLength,
-                                   sizeof(char));
-                        strcpy(tokens[tokenCount].operatorString,
-                               "tan");
+                            i += 2;
+                        } else if (i + 2 < lineLength &&
+                                   line[i] == 't' &&
+                                   line[i + 1] == 'a' &&
+                                   line[i + 2] == 'n') {
+                            tokens[tokenCount].tokenType =
+                                Operator;
+                            tokens[tokenCount].operatorString =
+                                calloc((size_t)
+                                           maximumOperatorLength,
+                                       sizeof(char));
+                            strcpy(tokens[tokenCount]
+                                       .operatorString,
+                                   "tan");
 
-                        i += 2;
-                    } else if (i + 2 < lineLength &&
-                               line[i] == 'c' &&
-                               line[i + 1] == 'o' &&
-                               line[i + 2] == 't') {
-                        tokens[tokenCount].tokenType = Operator;
-                        tokens[tokenCount].operatorString =
-                            calloc((size_t)maximumOperatorLength,
-                                   sizeof(char));
-                        strcpy(tokens[tokenCount].operatorString,
-                               "cot");
+                            i += 2;
+                        } else if (i + 2 < lineLength &&
+                                   line[i] == 'c' &&
+                                   line[i + 1] == 'o' &&
+                                   line[i + 2] == 't') {
+                            tokens[tokenCount].tokenType =
+                                Operator;
+                            tokens[tokenCount].operatorString =
+                                calloc((size_t)
+                                           maximumOperatorLength,
+                                       sizeof(char));
+                            strcpy(tokens[tokenCount]
+                                       .operatorString,
+                                   "cot");
 
-                        i += 2;
-                    } else if (i + 5 < lineLength &&
-                               line[i] == 'a' &&
-                               line[i + 1] == 'r' &&
-                               line[i + 2] == 'c' &&
-                               line[i + 3] == 's' &&
-                               line[i + 4] == 'i' &&
-                               line[i + 5] == 'n') {
-                        tokens[tokenCount].tokenType = Operator;
-                        tokens[tokenCount].operatorString =
-                            calloc((size_t)maximumOperatorLength,
-                                   sizeof(char));
-                        strcpy(tokens[tokenCount].operatorString,
-                               "arcsin");
+                            i += 2;
+                        } else if (i + 5 < lineLength &&
+                                   line[i] == 'a' &&
+                                   line[i + 1] == 'r' &&
+                                   line[i + 2] == 'c' &&
+                                   line[i + 3] == 's' &&
+                                   line[i + 4] == 'i' &&
+                                   line[i + 5] == 'n') {
+                            tokens[tokenCount].tokenType =
+                                Operator;
+                            tokens[tokenCount].operatorString =
+                                calloc((size_t)
+                                           maximumOperatorLength,
+                                       sizeof(char));
+                            strcpy(tokens[tokenCount]
+                                       .operatorString,
+                                   "arcsin");
 
-                        i += 5;
-                    } else if (i + 5 < lineLength &&
-                               line[i] == 'a' &&
-                               line[i + 1] == 'r' &&
-                               line[i + 2] == 'c' &&
-                               line[i + 3] == 'c' &&
-                               line[i + 4] == 'o' &&
-                               line[i + 5] == 's') {
-                        tokens[tokenCount].tokenType = Operator;
-                        tokens[tokenCount].operatorString =
-                            calloc((size_t)maximumOperatorLength,
-                                   sizeof(char));
-                        strcpy(tokens[tokenCount].operatorString,
-                               "arccos");
+                            i += 5;
+                        } else if (i + 5 < lineLength &&
+                                   line[i] == 'a' &&
+                                   line[i + 1] == 'r' &&
+                                   line[i + 2] == 'c' &&
+                                   line[i + 3] == 'c' &&
+                                   line[i + 4] == 'o' &&
+                                   line[i + 5] == 's') {
+                            tokens[tokenCount].tokenType =
+                                Operator;
+                            tokens[tokenCount].operatorString =
+                                calloc((size_t)
+                                           maximumOperatorLength,
+                                       sizeof(char));
+                            strcpy(tokens[tokenCount]
+                                       .operatorString,
+                                   "arccos");
 
-                        i += 5;
-                    } else if (i + 5 < lineLength &&
-                               line[i] == 'a' &&
-                               line[i + 1] == 'r' &&
-                               line[i + 2] == 'c' &&
-                               line[i + 3] == 't' &&
-                               line[i + 4] == 'a' &&
-                               line[i + 5] == 'n') {
-                        tokens[tokenCount].tokenType = Operator;
-                        tokens[tokenCount].operatorString =
-                            calloc((size_t)maximumOperatorLength,
-                                   sizeof(char));
-                        strcpy(tokens[tokenCount].operatorString,
-                               "arctan");
+                            i += 5;
+                        } else if (i + 5 < lineLength &&
+                                   line[i] == 'a' &&
+                                   line[i + 1] == 'r' &&
+                                   line[i + 2] == 'c' &&
+                                   line[i + 3] == 't' &&
+                                   line[i + 4] == 'a' &&
+                                   line[i + 5] == 'n') {
+                            tokens[tokenCount].tokenType =
+                                Operator;
+                            tokens[tokenCount].operatorString =
+                                calloc((size_t)
+                                           maximumOperatorLength,
+                                       sizeof(char));
+                            strcpy(tokens[tokenCount]
+                                       .operatorString,
+                                   "arctan");
 
-                        i += 5;
-                    } else if (i + 5 < lineLength &&
-                               line[i] == 'a' &&
-                               line[i + 1] == 'r' &&
-                               line[i + 2] == 'c' &&
-                               line[i + 3] == 'c' &&
-                               line[i + 4] == 'o' &&
-                               line[i + 5] == 't') {
-                        tokens[tokenCount].tokenType = Operator;
-                        tokens[tokenCount].operatorString =
-                            calloc((size_t)maximumOperatorLength,
-                                   sizeof(char));
-                        strcpy(tokens[tokenCount].operatorString,
-                               "arccot");
+                            i += 5;
+                        } else if (i + 5 < lineLength &&
+                                   line[i] == 'a' &&
+                                   line[i + 1] == 'r' &&
+                                   line[i + 2] == 'c' &&
+                                   line[i + 3] == 'c' &&
+                                   line[i + 4] == 'o' &&
+                                   line[i + 5] == 't') {
+                            tokens[tokenCount].tokenType =
+                                Operator;
+                            tokens[tokenCount].operatorString =
+                                calloc((size_t)
+                                           maximumOperatorLength,
+                                       sizeof(char));
+                            strcpy(tokens[tokenCount]
+                                       .operatorString,
+                                   "arccot");
 
-                        i += 5;
-                    } else {
-                        consumedToken = 0;
+                            i += 5;
+                        } else {
+                            consumedToken = 0;
+                        }
+                        if (consumedToken) {
+                            ++tokenCount;
+                        }
                     }
-                    if (consumedToken) {
-                        ++tokenCount;
+
+                    if (input == 1) {
+                        bisect(tokens, tokenCount,
+                               maximumOperatorLength);
+                    } else if (input == 2) {
+                        solveWithRegulaFalsi(
+                            tokens, tokenCount,
+                            maximumOperatorLength);
+                    } else if (input == 3) {
+                        solveWithNewtonRaphson(
+                            tokens, tokenCount,
+                            maximumOperatorLength);
                     }
-                }
-
-                if (input == 1) {
-                    bisect(tokens, tokenCount,
-                           maximumOperatorLength);
-                } else if (input == 2) {
-                    solveWithRegulaFalsi(tokens, tokenCount,
-                                         maximumOperatorLength);
-                } else if (input == 3) {
-                    solveWithNewtonRaphson(
-                        tokens, tokenCount,
-                        maximumOperatorLength);
-                }
-
-                for (i = 0; i < tokenCount; ++i) {
-                    if (tokens[i].tokenType == Operator) {
-                        free(tokens[i].operatorString);
+                    for (i = 0; i < tokenCount; ++i) {
+                        if (tokens[i].tokenType == Operator) {
+                            free(tokens[i].operatorString);
+                        }
                     }
                 }
             }
