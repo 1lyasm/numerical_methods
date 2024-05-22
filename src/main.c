@@ -179,52 +179,52 @@ static double evaluate(double x, Token *tokens, int start,
         result = evaluate(x, tokens, start, end);
     } else {
         while (end > start) {
-            int multiplicationDivisionLength = 2;
+            int multiplicationDivisionCount = 2;
             char **multiplicationDivision =
-                malloc((size_t)multiplicationDivisionLength *
+                malloc((size_t)multiplicationDivisionCount *
                        sizeof(char *));
-            int additionSubtractionLength = 2;
+            int additionSubtractionCount = 2;
             char **additionSubtraction =
-                malloc((size_t)additionSubtractionLength *
+                malloc((size_t)additionSubtractionCount *
                        sizeof(char *));
-            int powerLength = 1;
+            int powerCount = 1;
             char **power =
-                malloc((size_t)powerLength * sizeof(char *));
+                malloc((size_t)powerCount * sizeof(char *));
 
-            for (i = 0; i < multiplicationDivisionLength; ++i) {
+            for (i = 0; i < multiplicationDivisionCount; ++i) {
                 multiplicationDivision[i] =
                     calloc(2, sizeof(char));
             }
             multiplicationDivision[0][0] = '*';
             multiplicationDivision[1][0] = '/';
 
-            for (i = 0; i < additionSubtractionLength; ++i) {
+            for (i = 0; i < additionSubtractionCount; ++i) {
                 additionSubtraction[i] = calloc(2, sizeof(char));
             }
             additionSubtraction[0][0] = '+';
             additionSubtraction[1][0] = '-';
 
-            for (i = 0; i < powerLength; ++i) {
+            for (i = 0; i < powerCount; ++i) {
                 power[i] = calloc(2, sizeof(char));
             }
             power[0][0] = '^';
 
-            computeExpressions(power, powerLength, tokens, start,
+            computeExpressions(power, powerCount, tokens, start,
                                &end);
             computeExpressions(multiplicationDivision,
-                               multiplicationDivisionLength,
+                               multiplicationDivisionCount,
                                tokens, start, &end);
             computeExpressions(additionSubtraction,
-                               additionSubtractionLength, tokens,
+                               additionSubtractionCount, tokens,
                                start, &end);
 
-            for (i = 0; i < multiplicationDivisionLength; ++i) {
+            for (i = 0; i < multiplicationDivisionCount; ++i) {
                 free(multiplicationDivision[i]);
             }
-            for (i = 0; i < additionSubtractionLength; ++i) {
+            for (i = 0; i < additionSubtractionCount; ++i) {
                 free(additionSubtraction[i]);
             }
-            for (i = 0; i < powerLength; ++i) {
+            for (i = 0; i < powerCount; ++i) {
                 free(power[i]);
             }
             free(multiplicationDivision);
@@ -336,7 +336,115 @@ int main() {
                             line[i];
                     } else if (line[i] == 'e') {
                         tokens[tokenCount].tokenType = Constant;
-                        tokens[tokenCount].constantValue = CONSTANT_E;
+                        tokens[tokenCount].constantValue =
+                            CONSTANT_E;
+                    } else if (i + 2 < lineLength &&
+                               line[i] == 's' &&
+                               line[i + 1] == 'i' &&
+                               line[i + 2] == 'n') {
+                        tokens[tokenCount].tokenType = Operator;
+                        tokens[tokenCount].operatorString =
+                            calloc((size_t)maximumOperatorLength,
+                                   sizeof(char));
+                        strcpy(tokens[tokenCount].operatorString,
+                               "sin");
+                        i += 2;
+                    } else if (i + 2 < lineLength &&
+                               line[i] == 'c' &&
+                               line[i + 1] == 'o' &&
+                               line[i + 2] == 's') {
+                        tokens[tokenCount].tokenType = Operator;
+                        tokens[tokenCount].operatorString =
+                            calloc((size_t)maximumOperatorLength,
+                                   sizeof(char));
+                        strcpy(tokens[tokenCount].operatorString,
+                               "cos");
+
+                        i += 2;
+                    } else if (i + 2 < lineLength &&
+                               line[i] == 't' &&
+                               line[i + 1] == 'a' &&
+                               line[i + 2] == 'n') {
+                        tokens[tokenCount].tokenType = Operator;
+                        tokens[tokenCount].operatorString =
+                            calloc((size_t)maximumOperatorLength,
+                                   sizeof(char));
+                        strcpy(tokens[tokenCount].operatorString,
+                               "tan");
+
+                        i += 2;
+                    } else if (i + 2 < lineLength &&
+                               line[i] == 'c' &&
+                               line[i + 1] == 'o' &&
+                               line[i + 2] == 't') {
+                        tokens[tokenCount].tokenType = Operator;
+                        tokens[tokenCount].operatorString =
+                            calloc((size_t)maximumOperatorLength,
+                                   sizeof(char));
+                        strcpy(tokens[tokenCount].operatorString,
+                               "cot");
+
+                        i += 2;
+                    } else if (i + 5 < lineLength &&
+                               line[i] == 'a' &&
+                               line[i + 1] == 'r' &&
+                               line[i + 2] == 'c' &&
+                               line[i + 3] == 's' &&
+                               line[i + 4] == 'i' &&
+                               line[i + 5] == 'n') {
+                        tokens[tokenCount].tokenType = Operator;
+                        tokens[tokenCount].operatorString =
+                            calloc((size_t)maximumOperatorLength,
+                                   sizeof(char));
+                        strcpy(tokens[tokenCount].operatorString,
+                               "arcsin");
+
+                        i += 5;
+                    } else if (i + 5 < lineLength &&
+                               line[i] == 'a' &&
+                               line[i + 1] == 'r' &&
+                               line[i + 2] == 'c' &&
+                               line[i + 3] == 'c' &&
+                               line[i + 4] == 'o' &&
+                               line[i + 5] == 's') {
+                        tokens[tokenCount].tokenType = Operator;
+                        tokens[tokenCount].operatorString =
+                            calloc((size_t)maximumOperatorLength,
+                                   sizeof(char));
+                        strcpy(tokens[tokenCount].operatorString,
+                               "arccos");
+
+                        i += 5;
+                    } else if (i + 5 < lineLength &&
+                               line[i] == 'a' &&
+                               line[i + 1] == 'r' &&
+                               line[i + 2] == 'c' &&
+                               line[i + 3] == 't' &&
+                               line[i + 4] == 'a' &&
+                               line[i + 5] == 'n') {
+                        tokens[tokenCount].tokenType = Operator;
+                        tokens[tokenCount].operatorString =
+                            calloc((size_t)maximumOperatorLength,
+                                   sizeof(char));
+                        strcpy(tokens[tokenCount].operatorString,
+                               "arctan");
+
+                        i += 5;
+                    } else if (i + 5 < lineLength &&
+                               line[i] == 'a' &&
+                               line[i + 1] == 'r' &&
+                               line[i + 2] == 'c' &&
+                               line[i + 3] == 'c' &&
+                               line[i + 4] == 'o' &&
+                               line[i + 5] == 't') {
+                        tokens[tokenCount].tokenType = Operator;
+                        tokens[tokenCount].operatorString =
+                            calloc((size_t)maximumOperatorLength,
+                                   sizeof(char));
+                        strcpy(tokens[tokenCount].operatorString,
+                               "arccot");
+
+                        i += 5;
                     } else {
                         consumedToken = 0;
                     }
